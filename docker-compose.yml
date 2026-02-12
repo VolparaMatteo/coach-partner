@@ -1,0 +1,29 @@
+version: "3.8"
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=development
+      - DATABASE_URL=sqlite:///coach_partner.db
+      - SECRET_KEY=${SECRET_KEY:-dev-secret-change-me}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-dev-jwt-change-me}
+    volumes:
+      - ./backend:/app
+      - backend_data:/app/instance
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+volumes:
+  backend_data:

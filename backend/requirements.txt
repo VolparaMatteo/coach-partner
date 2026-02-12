@@ -1,0 +1,9 @@
+Flask==3.1.0
+Flask-SQLAlchemy==3.1.1
+Flask-Migrate==4.1.0
+Flask-JWT-Extended==4.7.1
+Flask-CORS==5.0.1
+python-dotenv==1.0.1
+bcrypt==4.2.1
+gunicorn==23.0.0
+openai==1.82.0
