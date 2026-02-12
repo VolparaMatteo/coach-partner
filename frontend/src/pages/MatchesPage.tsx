@@ -1,15 +1,16 @@
 import { useEffect, useState } from 'react'
 import api from '@/api/client'
-import type { Team, Match, SportConfig } from '@/types'
+import type { Match, SportConfig } from '@/types'
 import { useAuthStore } from '@/store/auth'
+import { useTeamStore } from '@/store/team'
 import MatchDetail from '@/components/Match/MatchDetail'
+import TeamSelector from '@/components/TeamSelector/TeamSelector'
 import { Trophy, Plus, X, MapPin } from 'lucide-react'
 import clsx from 'clsx'
 
 export default function MatchesPage() {
   const { user } = useAuthStore()
-  const [teams, setTeams] = useState<Team[]>([])
-  const [activeTeamId, setActiveTeamId] = useState<number | null>(null)
+  const { activeTeamId, setTeams } = useTeamStore()
   const [matches, setMatches] = useState<Match[]>([])
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null)
   const [sportConfig, setSportConfig] = useState<SportConfig | null>(null)
@@ -27,7 +28,6 @@ export default function MatchesPage() {
     const load = async () => {
       const { data } = await api.get('/teams')
       setTeams(data.teams)
-      if (data.teams.length > 0) setActiveTeamId(data.teams[0].id)
       if (user?.sport) {
         const { data: sc } = await api.get(`/onboarding/sport-config/${user.sport}`)
         setSportConfig(sc.config)
@@ -94,11 +94,14 @@ export default function MatchesPage() {
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <Trophy size={24} /> Gare
           </h1>
-          <p className="text-gray-500 text-sm">{matches.length} partite</p>
+          <p className="text-gray-500 dark:text-gray-400 text-sm">{matches.length} partite</p>
         </div>
+        <div className="flex items-center gap-2">
+          <TeamSelector />
         <button onClick={() => setShowCreate(true)} className="btn-primary flex items-center gap-2">
           <Plus size={18} /> Nuova Gara
         </button>
+        </div>
       </div>
 
       {showCreate && (

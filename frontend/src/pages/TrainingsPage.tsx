@@ -1,18 +1,19 @@
 import { useEffect, useState } from 'react'
 import api from '@/api/client'
-import type { Team, TrainingSession, TrainingBlock, SportConfig } from '@/types'
+import type { TrainingSession, TrainingBlock, SportConfig } from '@/types'
 import { useAuthStore } from '@/store/auth'
+import { useTeamStore } from '@/store/team'
 import TrainingBuilder from '@/components/TrainingBuilder/TrainingBuilder'
 import FieldMode from '@/components/FieldMode/FieldMode'
 import PostTrainingFlow from '@/components/PostTraining/PostTrainingFlow'
 import ExerciseLibrary from '@/components/ExerciseLibrary/ExerciseLibrary'
+import TeamSelector from '@/components/TeamSelector/TeamSelector'
 import { Calendar, Plus, X, Clock, Target, BookOpen, Play, ClipboardCheck } from 'lucide-react'
 import clsx from 'clsx'
 
 export default function TrainingsPage() {
   const { user } = useAuthStore()
-  const [teams, setTeams] = useState<Team[]>([])
-  const [activeTeamId, setActiveTeamId] = useState<number | null>(null)
+  const { activeTeamId, setTeams } = useTeamStore()
   const [sessions, setSessions] = useState<TrainingSession[]>([])
   const [sportConfig, setSportConfig] = useState<SportConfig | null>(null)
   const [loading, setLoading] = useState(true)
@@ -33,7 +34,6 @@ export default function TrainingsPage() {
     const load = async () => {
       const { data } = await api.get('/teams')
       setTeams(data.teams)
-      if (data.teams.length > 0) setActiveTeamId(data.teams[0].id)
       if (user?.sport) {
         const { data: sc } = await api.get(`/onboarding/sport-config/${user.sport}`)
         setSportConfig(sc.config)
@@ -196,11 +196,14 @@ export default function TrainingsPage() {
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <Calendar size={24} /> Allenamenti
           </h1>
-          <p className="text-gray-500 text-sm">{sessions.length} sessioni</p>
+          <p className="text-gray-500 dark:text-gray-400 text-sm">{sessions.length} sessioni</p>
         </div>
+        <div className="flex items-center gap-2">
+          <TeamSelector />
         <button onClick={() => setShowCreate(true)} className="btn-primary flex items-center gap-2">
           <Plus size={18} /> Nuovo
         </button>
+        </div>
       </div>
 
       {/* Create form */}

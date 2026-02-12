@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import { useAuthStore } from '@/store/auth'
+import { useThemeStore } from '@/store/theme'
 import api from '@/api/client'
-import { Settings, User, Save, Check } from 'lucide-react'
+import { Settings, User, Save, Check, Moon, Sun, Palette } from 'lucide-react'
 
 export default function SettingsPage() {
   const { user, setUser } = useAuthStore()
+  const { dark, toggle } = useThemeStore()
   const [form, setForm] = useState({
     first_name: user?.first_name || '',
     last_name: user?.last_name || '',
@@ -103,9 +105,28 @@ export default function SettingsPage() {
       </div>
 
       <div className="card">
+        <h2 className="font-semibold mb-4 flex items-center gap-2">
+          <Palette size={18} /> Aspetto
+        </h2>
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="font-medium">{dark ? 'Modalità Scura' : 'Modalità Chiara'}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Cambia il tema dell'applicazione</p>
+          </div>
+          <button
+            onClick={toggle}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+          >
+            {dark ? <Sun size={18} className="text-yellow-500" /> : <Moon size={18} className="text-gray-500" />}
+            <span className="text-sm font-medium">{dark ? 'Passa a Chiaro' : 'Passa a Scuro'}</span>
+          </button>
+        </div>
+      </div>
+
+      <div className="card">
         <h2 className="font-semibold mb-2">Informazioni</h2>
-        <p className="text-sm text-gray-500">
-          Coach Partner v1.0.0<br />
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          Coach Partner v2.0.0<br />
           Account creato il {user?.created_at ? new Date(user.created_at).toLocaleDateString('it-IT') : 'N/D'}
         </p>
       </div>
