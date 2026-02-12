@@ -1,5 +1,6 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/auth'
+import QuickNoteFAB from '@/components/QuickNote/QuickNoteFAB'
 import {
   Home, Users, Calendar, Trophy, BarChart3,
   Settings, LogOut, Menu, X
@@ -119,6 +120,9 @@ export default function Layout() {
         <main className="flex-1 p-4 lg:p-8 overflow-auto">
           <Outlet />
         </main>
+
+        {/* Quick Note FAB */}
+        <QuickNoteFAB />
 
         {/* Mobile bottom nav */}
         <nav className="lg:hidden flex items-center justify-around bg-white border-t border-gray-200 py-2">

@@ -1,8 +1,12 @@
 import { useEffect, useState } from 'react'
 import api from '@/api/client'
-import type { Team, TrainingSession, SportConfig } from '@/types'
+import type { Team, TrainingSession, TrainingBlock, SportConfig } from '@/types'
 import { useAuthStore } from '@/store/auth'
-import { Calendar, Plus, X, Clock, Target } from 'lucide-react'
+import TrainingBuilder from '@/components/TrainingBuilder/TrainingBuilder'
+import FieldMode from '@/components/FieldMode/FieldMode'
+import PostTrainingFlow from '@/components/PostTraining/PostTrainingFlow'
+import ExerciseLibrary from '@/components/ExerciseLibrary/ExerciseLibrary'
+import { Calendar, Plus, X, Clock, Target, BookOpen, Play, ClipboardCheck } from 'lucide-react'
 import clsx from 'clsx'
 
 export default function TrainingsPage() {
@@ -13,6 +17,11 @@ export default function TrainingsPage() {
   const [sportConfig, setSportConfig] = useState<SportConfig | null>(null)
   const [loading, setLoading] = useState(true)
   const [showCreate, setShowCreate] = useState(false)
+  const [editingSession, setEditingSession] = useState<TrainingSession | null>(null)
+  const [builderBlocks, setBuilderBlocks] = useState<TrainingBlock[]>([])
+  const [fieldModeSession, setFieldModeSession] = useState<TrainingSession | null>(null)
+  const [postTrainingSession, setPostTrainingSession] = useState<TrainingSession | null>(null)
+  const [showLibrary, setShowLibrary] = useState(false)
   const [form, setForm] = useState({
     date: new Date().toISOString().split('T')[0],
     title: '',
@@ -65,10 +74,119 @@ export default function TrainingsPage() {
     }))
   }
 
+  const openBuilder = async (session: TrainingSession) => {
+    const { data } = await api.get(`/trainings/${session.id}`)
+    setEditingSession(data.session)
+    setBuilderBlocks(data.session.blocks || [])
+  }
+
+  const saveBuilder = async () => {
+    if (!editingSession) return
+    // Save blocks via API
+    for (const block of builderBlocks) {
+      if (block.id && block.id > 1000000000) {
+        // New block (temp ID from Date.now)
+        await api.post(`/trainings/${editingSession.id}/blocks`, block)
+      } else if (block.id) {
+        await api.patch(`/trainings/${editingSession.id}/blocks/${block.id}`, block)
+      }
+    }
+    setEditingSession(null)
+    setBuilderBlocks([])
+    if (activeTeamId) {
+      const { data } = await api.get(`/trainings?team_id=${activeTeamId}`)
+      setSessions(data.sessions)
+    }
+  }
+
+  const addExerciseToBuilder = (exercise: { name: string; block_type: string; duration_minutes: number; intensity: string; description: string; equipment: string }) => {
+    setBuilderBlocks(prev => [...prev, {
+      id: Date.now(),
+      session_id: editingSession?.id || 0,
+      order: prev.length,
+      block_type: exercise.block_type,
+      name: exercise.name,
+      objective: null,
+      duration_minutes: exercise.duration_minutes,
+      intensity: exercise.intensity,
+      description: exercise.description,
+      coaching_points: null,
+      variations: null,
+      equipment: exercise.equipment,
+      space: null,
+      num_players: null,
+      rules: null,
+      tags: null,
+      completed: false,
+      actual_rpe: null,
+      notes: null,
+    }])
+    setShowLibrary(false)
+  }
+
   if (loading) {
     return <div className="flex items-center justify-center h-64">
       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600" />
     </div>
+  }
+
+  // Field mode
+  if (fieldModeSession) {
+    return <FieldMode
+      blocks={builderBlocks.length > 0 ? builderBlocks : []}
+      sessionTitle={fieldModeSession.title || 'Allenamento'}
+      onClose={() => setFieldModeSession(null)}
+      onBlockComplete={(i, rpe, notes) => {
+        setBuilderBlocks(prev => prev.map((b, idx) => idx === i ? { ...b, completed: true, actual_rpe: rpe, notes } : b))
+      }}
+      onQuickNote={(text) => {
+        api.post('/notes', { text, entity_type: 'training', entity_id: fieldModeSession.id, is_quick_note: true, tags: [] })
+      }}
+    />
+  }
+
+  // Post-training flow
+  if (postTrainingSession && activeTeamId) {
+    return <PostTrainingFlow
+      session={postTrainingSession}
+      teamId={activeTeamId}
+      onClose={() => setPostTrainingSession(null)}
+      onComplete={() => {
+        setPostTrainingSession(null)
+        if (activeTeamId) api.get(`/trainings?team_id=${activeTeamId}`).then(({ data }) => setSessions(data.sessions))
+      }}
+    />
+  }
+
+  // Builder view
+  if (editingSession) {
+    return (
+      <div className="max-w-5xl mx-auto space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <button onClick={() => { setEditingSession(null); setBuilderBlocks([]) }} className="text-sm text-gray-500 hover:text-gray-700 mb-1">
+              ← Torna alla lista
+            </button>
+            <h1 className="text-2xl font-bold">{editingSession.title || 'Allenamento'} - Builder</h1>
+          </div>
+          <button onClick={() => setShowLibrary(!showLibrary)} className="btn-secondary flex items-center gap-2 text-sm">
+            <BookOpen size={16} /> Libreria Esercizi
+          </button>
+        </div>
+        {showLibrary && user?.sport && (
+          <div className="card">
+            <ExerciseLibrary sport={user.sport} sportConfig={sportConfig} onSelectExercise={addExerciseToBuilder} />
+          </div>
+        )}
+        <TrainingBuilder
+          blocks={builderBlocks}
+          sportConfig={sportConfig}
+          onChange={setBuilderBlocks}
+          onSave={saveBuilder}
+          onStartFieldMode={() => setFieldModeSession(editingSession)}
+        />
+      </div>
+    )
   }
 
   return (
@@ -162,6 +280,15 @@ export default function TrainingsPage() {
                   </div>
                 </div>
               </div>
+              <div className="flex items-center gap-2">
+                <button onClick={() => openBuilder(session)} className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 text-xs font-medium">
+                  Builder
+                </button>
+                {session.status !== 'completed' && (
+                  <button onClick={() => setPostTrainingSession(session)} className="p-2 bg-green-50 text-green-600 rounded-lg hover:bg-green-100">
+                    <ClipboardCheck size={16} />
+                  </button>
+                )}
               <span className={clsx('px-3 py-1 rounded-lg text-xs font-medium',
                 session.status === 'completed' ? 'bg-green-100 text-green-700' :
                 session.status === 'in_progress' ? 'bg-yellow-100 text-yellow-700' :
@@ -170,6 +297,7 @@ export default function TrainingsPage() {
                 {session.status === 'completed' ? 'Completato' :
                  session.status === 'in_progress' ? 'In corso' : 'Pianificato'}
               </span>
+              </div>
             </div>
           </div>
         ))}

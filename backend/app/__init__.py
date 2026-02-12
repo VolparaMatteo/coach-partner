@@ -31,6 +31,7 @@ def create_app(config_name="default"):
     from app.routes.injuries import injuries_bp
     from app.routes.notes import notes_bp
     from app.routes.ai_reports import ai_reports_bp
+    from app.routes.dashboard import dashboard_bp
 
     app.register_blueprint(auth_bp, url_prefix="/api/auth")
     app.register_blueprint(onboarding_bp, url_prefix="/api/onboarding")
@@ -43,6 +44,7 @@ def create_app(config_name="default"):
     app.register_blueprint(injuries_bp, url_prefix="/api/injuries")
     app.register_blueprint(notes_bp, url_prefix="/api/notes")
     app.register_blueprint(ai_reports_bp, url_prefix="/api/ai")
+    app.register_blueprint(dashboard_bp, url_prefix="/api/dashboard")
 
     @app.route("/api/health")
     def health():

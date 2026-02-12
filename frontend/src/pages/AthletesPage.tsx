@@ -2,11 +2,15 @@ import { useEffect, useState } from 'react'
 import api from '@/api/client'
 import type { Team, Athlete, SportConfig } from '@/types'
 import { useAuthStore } from '@/store/auth'
-import { Users, Plus, Search, X, UserCircle } from 'lucide-react'
+import AthleteDetail from '@/components/Athletes/AthleteDetail'
+import CSVImport from '@/components/Athletes/CSVImport'
+import { Users, Plus, Search, X, UserCircle, Upload } from 'lucide-react'
 import clsx from 'clsx'
 
 export default function AthletesPage() {
   const { user } = useAuthStore()
+  const [selectedAthleteId, setSelectedAthleteId] = useState<number | null>(null)
+  const [showCSVImport, setShowCSVImport] = useState(false)
   const [teams, setTeams] = useState<Team[]>([])
   const [activeTeamId, setActiveTeamId] = useState<number | null>(null)
   const [athletes, setAthletes] = useState<Athlete[]>([])
@@ -82,6 +86,11 @@ export default function AthletesPage() {
     </div>
   }
 
+  // Athlete detail view
+  if (selectedAthleteId) {
+    return <AthleteDetail athleteId={selectedAthleteId} sportConfig={sportConfig} onBack={() => setSelectedAthleteId(null)} />
+  }
+
   return (
     <div className="max-w-5xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
@@ -91,9 +100,14 @@ export default function AthletesPage() {
           </h1>
           <p className="text-gray-500 text-sm">{athletes.length} atleti in rosa</p>
         </div>
-        <button onClick={() => setShowAdd(true)} className="btn-primary flex items-center gap-2">
-          <Plus size={18} /> Aggiungi
-        </button>
+        <div className="flex gap-2">
+          <button onClick={() => setShowCSVImport(!showCSVImport)} className="btn-secondary flex items-center gap-2 text-sm">
+            <Upload size={16} /> CSV
+          </button>
+          <button onClick={() => setShowAdd(true)} className="btn-primary flex items-center gap-2">
+            <Plus size={18} /> Aggiungi
+          </button>
+        </div>
       </div>
 
       {/* Search */}
@@ -131,10 +145,20 @@ export default function AthletesPage() {
         </div>
       )}
 
+      {/* CSV Import */}
+      {showCSVImport && activeTeamId && (
+        <div className="card border-brand-200 border-2">
+          <CSVImport teamId={activeTeamId} onImported={() => {
+            setShowCSVImport(false)
+            if (activeTeamId) api.get(`/athletes?team_id=${activeTeamId}`).then(({ data }) => setAthletes(data.athletes))
+          }} />
+        </div>
+      )}
+
       {/* Athletes grid */}
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredAthletes.map(athlete => (
-          <div key={athlete.id} className="card hover:shadow-md transition-shadow cursor-pointer">
+          <div key={athlete.id} onClick={() => setSelectedAthleteId(athlete.id)} className="card hover:shadow-md transition-shadow cursor-pointer">
             <div className="flex items-start gap-3">
               <div className="w-12 h-12 rounded-full bg-brand-100 flex items-center justify-center text-brand-700 font-bold text-lg shrink-0">
                 {athlete.jersey_number || <UserCircle size={24} />}

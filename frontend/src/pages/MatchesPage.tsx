@@ -1,13 +1,18 @@
 import { useEffect, useState } from 'react'
 import api from '@/api/client'
-import type { Team, Match } from '@/types'
+import type { Team, Match, SportConfig } from '@/types'
+import { useAuthStore } from '@/store/auth'
+import MatchDetail from '@/components/Match/MatchDetail'
 import { Trophy, Plus, X, MapPin } from 'lucide-react'
 import clsx from 'clsx'
 
 export default function MatchesPage() {
+  const { user } = useAuthStore()
   const [teams, setTeams] = useState<Team[]>([])
   const [activeTeamId, setActiveTeamId] = useState<number | null>(null)
   const [matches, setMatches] = useState<Match[]>([])
+  const [selectedMatch, setSelectedMatch] = useState<Match | null>(null)
+  const [sportConfig, setSportConfig] = useState<SportConfig | null>(null)
   const [loading, setLoading] = useState(true)
   const [showCreate, setShowCreate] = useState(false)
   const [form, setForm] = useState({
@@ -23,10 +28,14 @@ export default function MatchesPage() {
       const { data } = await api.get('/teams')
       setTeams(data.teams)
       if (data.teams.length > 0) setActiveTeamId(data.teams[0].id)
+      if (user?.sport) {
+        const { data: sc } = await api.get(`/onboarding/sport-config/${user.sport}`)
+        setSportConfig(sc.config)
+      }
       setLoading(false)
     }
     load()
-  }, [])
+  }, [user?.sport])
 
   useEffect(() => {
     if (activeTeamId) {
@@ -63,6 +72,19 @@ export default function MatchesPage() {
     return <div className="flex items-center justify-center h-64">
       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600" />
     </div>
+  }
+
+  if (selectedMatch && activeTeamId) {
+    return <MatchDetail
+      match={selectedMatch}
+      teamId={activeTeamId}
+      sportConfig={sportConfig}
+      onBack={() => setSelectedMatch(null)}
+      onUpdate={(m) => {
+        setMatches(prev => prev.map(pm => pm.id === m.id ? m : pm))
+        setSelectedMatch(m)
+      }}
+    />
   }
 
   return (
@@ -126,7 +148,7 @@ export default function MatchesPage() {
 
       <div className="space-y-3">
         {matches.map(match => (
-          <div key={match.id} className="card hover:shadow-md transition-shadow">
+          <div key={match.id} onClick={() => setSelectedMatch(match)} className="card hover:shadow-md transition-shadow cursor-pointer">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <div className="w-14 h-14 rounded-xl bg-orange-50 flex flex-col items-center justify-center">
