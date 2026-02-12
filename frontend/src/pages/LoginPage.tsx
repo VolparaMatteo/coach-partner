@@ -25,7 +25,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-brand-50 to-green-50 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-brand-50 to-green-50 dark:from-gray-950 dark:to-gray-900 px-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-brand-700">Coach Partner</h1>
@@ -69,12 +69,17 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <p className="text-center text-sm text-gray-500 mt-6">
-            Non hai un account?{' '}
-            <Link to="/register" className="text-brand-600 font-medium hover:underline">
-              Registrati gratis
+          <div className="text-center mt-6 space-y-2">
+            <Link to="/forgot-password" className="block text-sm text-gray-500 dark:text-gray-400 hover:text-brand-600 dark:hover:text-brand-400">
+              Password dimenticata?
             </Link>
-          </p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Non hai un account?{' '}
+              <Link to="/register" className="text-brand-600 dark:text-brand-400 font-medium hover:underline">
+                Registrati gratis
+              </Link>
+            </p>
+          </div>
         </div>
       </div>
     </div>

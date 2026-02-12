@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react'
 import api from '@/api/client'
 import type { Match, Athlete, SportConfig } from '@/types'
+import { useAuthStore } from '@/store/auth'
+import FormationEditor from '@/components/Formation/FormationEditor'
 import {
   ArrowLeft, Shield, Swords, Users, ClipboardList, Check,
-  MapPin, Clock, Zap, Star, ChevronRight, Save, X
+  MapPin, Clock, Zap, Star, ChevronRight, Save, X, LayoutGrid
 } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -15,9 +17,10 @@ interface Props {
   onUpdate: (match: Match) => void
 }
 
-type Tab = 'plan' | 'opponent' | 'checklist' | 'roster' | 'result' | 'ratings'
+type Tab = 'plan' | 'formation' | 'opponent' | 'checklist' | 'roster' | 'result' | 'ratings'
 
 export default function MatchDetail({ match, teamId, sportConfig, onBack, onUpdate }: Props) {
+  const { user } = useAuthStore()
   const [athletes, setAthletes] = useState<Athlete[]>([])
   const [activeTab, setActiveTab] = useState<Tab>(match.status === 'completed' ? 'result' : 'plan')
   const [loading, setLoading] = useState(true)
@@ -141,8 +144,24 @@ export default function MatchDetail({ match, teamId, sportConfig, onBack, onUpda
     setGenerating(false)
   }
 
+  const saveFormation = async (formation: { athleteId: number; x: number; y: number }[]) => {
+    const currentPlan = match.game_plan ? JSON.parse(match.game_plan) : {}
+    const { data } = await api.patch(`/matches/${match.id}`, {
+      game_plan: { ...currentPlan, formation },
+    })
+    onUpdate(data.match)
+  }
+
+  const parsedFormation = (() => {
+    try {
+      const gp = match.game_plan ? JSON.parse(match.game_plan) : {}
+      return gp.formation || []
+    } catch { return [] }
+  })()
+
   const preTabs: { value: Tab; label: string; icon: any }[] = [
     { value: 'plan', label: 'Piano Gara', icon: Swords },
+    { value: 'formation', label: 'Formazione', icon: LayoutGrid },
     { value: 'opponent', label: 'Avversario', icon: Shield },
     { value: 'roster', label: 'Convocati', icon: Users },
     { value: 'checklist', label: 'Checklist', icon: ClipboardList },
@@ -211,6 +230,17 @@ export default function MatchDetail({ match, teamId, sportConfig, onBack, onUpda
               value={individualFocus} onChange={(e) => setIndividualFocus(e.target.value)} />
           </div>
           <button onClick={saveGamePlan} className="btn-primary flex items-center gap-2"><Save size={16} /> Salva Piano</button>
+        </div>
+      )}
+
+      {activeTab === 'formation' && user?.sport && (
+        <div className="card">
+          <FormationEditor
+            athletes={calledUp.length > 0 ? athletes.filter(a => calledUp.includes(a.id)) : athletes}
+            sport={user.sport}
+            initialFormation={parsedFormation}
+            onSave={saveFormation}
+          />
         </div>
       )}
 

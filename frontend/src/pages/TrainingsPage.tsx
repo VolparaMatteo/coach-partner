@@ -3,17 +3,21 @@ import api from '@/api/client'
 import type { TrainingSession, TrainingBlock, SportConfig } from '@/types'
 import { useAuthStore } from '@/store/auth'
 import { useTeamStore } from '@/store/team'
+import { useToastStore } from '@/store/toast'
 import TrainingBuilder from '@/components/TrainingBuilder/TrainingBuilder'
 import FieldMode from '@/components/FieldMode/FieldMode'
 import PostTrainingFlow from '@/components/PostTraining/PostTrainingFlow'
 import ExerciseLibrary from '@/components/ExerciseLibrary/ExerciseLibrary'
 import TeamSelector from '@/components/TeamSelector/TeamSelector'
-import { Calendar, Plus, X, Clock, Target, BookOpen, Play, ClipboardCheck } from 'lucide-react'
+import TemplatePicker from '@/components/Templates/TemplatePicker'
+import WeeklyPlanner from '@/components/Planner/WeeklyPlanner'
+import { Calendar, Plus, X, Clock, Target, BookOpen, ClipboardCheck, BookMarked, CalendarDays, List, Save } from 'lucide-react'
 import clsx from 'clsx'
 
 export default function TrainingsPage() {
   const { user } = useAuthStore()
   const { activeTeamId, setTeams } = useTeamStore()
+  const toast = useToastStore()
   const [sessions, setSessions] = useState<TrainingSession[]>([])
   const [sportConfig, setSportConfig] = useState<SportConfig | null>(null)
   const [loading, setLoading] = useState(true)
@@ -23,6 +27,8 @@ export default function TrainingsPage() {
   const [fieldModeSession, setFieldModeSession] = useState<TrainingSession | null>(null)
   const [postTrainingSession, setPostTrainingSession] = useState<TrainingSession | null>(null)
   const [showLibrary, setShowLibrary] = useState(false)
+  const [showTemplates, setShowTemplates] = useState(false)
+  const [viewMode, setViewMode] = useState<'list' | 'week'>('list')
   const [form, setForm] = useState({
     date: new Date().toISOString().split('T')[0],
     title: '',
@@ -63,6 +69,7 @@ export default function TrainingsPage() {
     setSessions(prev => [data.session, ...prev])
     setForm({ date: new Date().toISOString().split('T')[0], title: '', duration_minutes: '90', objectives: [] })
     setShowCreate(false)
+    toast.success('Allenamento creato!')
   }
 
   const toggleObjective = (obj: string) => {
@@ -82,20 +89,31 @@ export default function TrainingsPage() {
 
   const saveBuilder = async () => {
     if (!editingSession) return
-    // Save blocks via API
     for (const block of builderBlocks) {
       if (block.id && block.id > 1000000000) {
-        // New block (temp ID from Date.now)
         await api.post(`/trainings/${editingSession.id}/blocks`, block)
       } else if (block.id) {
         await api.patch(`/trainings/${editingSession.id}/blocks/${block.id}`, block)
       }
     }
+    toast.success('Blocchi salvati!')
     setEditingSession(null)
     setBuilderBlocks([])
     if (activeTeamId) {
       const { data } = await api.get(`/trainings?team_id=${activeTeamId}`)
       setSessions(data.sessions)
+    }
+  }
+
+  const saveAsTemplate = async () => {
+    if (!editingSession) return
+    const name = prompt('Nome del template:')
+    if (!name) return
+    try {
+      await api.post('/templates', { session_id: editingSession.id, name, description: '' })
+      toast.success('Template salvato!')
+    } catch {
+      toast.error('Errore nel salvataggio del template')
     }
   }
 
@@ -153,6 +171,7 @@ export default function TrainingsPage() {
       onClose={() => setPostTrainingSession(null)}
       onComplete={() => {
         setPostTrainingSession(null)
+        toast.success('Post-allenamento completato!')
         if (activeTeamId) api.get(`/trainings?team_id=${activeTeamId}`).then(({ data }) => setSessions(data.sessions))
       }}
     />
@@ -164,14 +183,19 @@ export default function TrainingsPage() {
       <div className="max-w-5xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <button onClick={() => { setEditingSession(null); setBuilderBlocks([]) }} className="text-sm text-gray-500 hover:text-gray-700 mb-1">
+            <button onClick={() => { setEditingSession(null); setBuilderBlocks([]) }} className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 mb-1">
               ← Torna alla lista
             </button>
             <h1 className="text-2xl font-bold">{editingSession.title || 'Allenamento'} - Builder</h1>
           </div>
-          <button onClick={() => setShowLibrary(!showLibrary)} className="btn-secondary flex items-center gap-2 text-sm">
-            <BookOpen size={16} /> Libreria Esercizi
-          </button>
+          <div className="flex items-center gap-2">
+            <button onClick={saveAsTemplate} className="btn-secondary flex items-center gap-2 text-sm">
+              <Save size={14} /> Salva come Template
+            </button>
+            <button onClick={() => setShowLibrary(!showLibrary)} className="btn-secondary flex items-center gap-2 text-sm">
+              <BookOpen size={16} /> Libreria
+            </button>
+          </div>
         </div>
         {showLibrary && user?.sport && (
           <div className="card">
@@ -200,15 +224,46 @@ export default function TrainingsPage() {
         </div>
         <div className="flex items-center gap-2">
           <TeamSelector />
-        <button onClick={() => setShowCreate(true)} className="btn-primary flex items-center gap-2">
-          <Plus size={18} /> Nuovo
-        </button>
+          <button onClick={() => setShowTemplates(!showTemplates)} className="btn-secondary flex items-center gap-2 text-sm py-2 px-3">
+            <BookMarked size={14} />
+          </button>
+          <button onClick={() => setShowCreate(true)} className="btn-primary flex items-center gap-2">
+            <Plus size={18} /> Nuovo
+          </button>
         </div>
       </div>
 
+      {/* View toggle */}
+      <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 rounded-xl p-1 max-w-xs">
+        <button onClick={() => setViewMode('list')}
+          className={clsx('flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-colors',
+            viewMode === 'list' ? 'bg-white dark:bg-gray-700 shadow-sm text-gray-900 dark:text-gray-100' : 'text-gray-500 dark:text-gray-400')}>
+          <List size={14} /> Lista
+        </button>
+        <button onClick={() => setViewMode('week')}
+          className={clsx('flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-colors',
+            viewMode === 'week' ? 'bg-white dark:bg-gray-700 shadow-sm text-gray-900 dark:text-gray-100' : 'text-gray-500 dark:text-gray-400')}>
+          <CalendarDays size={14} /> Settimana
+        </button>
+      </div>
+
+      {/* Template picker */}
+      {showTemplates && activeTeamId && (
+        <div className="card">
+          <TemplatePicker
+            teamId={activeTeamId}
+            onUseTemplate={(sessionId) => {
+              setShowTemplates(false)
+              if (activeTeamId) api.get(`/trainings?team_id=${activeTeamId}`).then(({ data }) => setSessions(data.sessions))
+            }}
+            onClose={() => setShowTemplates(false)}
+          />
+        </div>
+      )}
+
       {/* Create form */}
       {showCreate && (
-        <div className="card border-brand-200 border-2">
+        <div className="card border-brand-200 dark:border-brand-700 border-2">
           <div className="flex justify-between items-center mb-4">
             <h3 className="font-semibold">Nuova Sessione</h3>
             <button onClick={() => setShowCreate(false)}><X size={20} className="text-gray-400" /></button>
@@ -243,7 +298,7 @@ export default function TrainingsPage() {
                         'px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
                         form.objectives.includes(obj)
                           ? 'bg-brand-500 text-white'
-                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                          : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
                       )}
                     >
                       {obj}
@@ -257,57 +312,74 @@ export default function TrainingsPage() {
         </div>
       )}
 
+      {/* Weekly planner view */}
+      {viewMode === 'week' && activeTeamId && (
+        <div className="card">
+          <WeeklyPlanner
+            teamId={activeTeamId}
+            onCreateSession={(date) => {
+              setForm(p => ({ ...p, date }))
+              setShowCreate(true)
+            }}
+            onSelectSession={openBuilder}
+            onSelectMatch={() => {}}
+          />
+        </div>
+      )}
+
       {/* Sessions list */}
-      <div className="space-y-3">
-        {sessions.map(session => (
-          <div key={session.id} className="card hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-xl bg-blue-50 flex flex-col items-center justify-center">
-                  <span className="text-xs text-blue-600 font-medium">
-                    {new Date(session.date + 'T00:00:00').toLocaleDateString('it-IT', { weekday: 'short' })}
-                  </span>
-                  <span className="text-lg font-bold text-blue-700">
-                    {new Date(session.date + 'T00:00:00').getDate()}
-                  </span>
-                </div>
-                <div>
-                  <p className="font-semibold">{session.title || 'Allenamento'}</p>
-                  <div className="flex items-center gap-3 text-sm text-gray-500 mt-1">
-                    {session.duration_minutes && (
-                      <span className="flex items-center gap-1"><Clock size={14} /> {session.duration_minutes} min</span>
-                    )}
-                    <span className="flex items-center gap-1">
-                      <Target size={14} /> {session.blocks_count} blocchi
+      {viewMode === 'list' && (
+        <div className="space-y-3">
+          {sessions.map(session => (
+            <div key={session.id} className="card hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 rounded-xl bg-blue-50 dark:bg-blue-900/20 flex flex-col items-center justify-center">
+                    <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">
+                      {new Date(session.date + 'T00:00:00').toLocaleDateString('it-IT', { weekday: 'short' })}
+                    </span>
+                    <span className="text-lg font-bold text-blue-700 dark:text-blue-300">
+                      {new Date(session.date + 'T00:00:00').getDate()}
                     </span>
                   </div>
+                  <div>
+                    <p className="font-semibold">{session.title || 'Allenamento'}</p>
+                    <div className="flex items-center gap-3 text-sm text-gray-500 dark:text-gray-400 mt-1">
+                      {session.duration_minutes && (
+                        <span className="flex items-center gap-1"><Clock size={14} /> {session.duration_minutes} min</span>
+                      )}
+                      <span className="flex items-center gap-1">
+                        <Target size={14} /> {session.blocks_count} blocchi
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button onClick={() => openBuilder(session)} className="p-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/40 text-xs font-medium">
+                    Builder
+                  </button>
+                  {session.status !== 'completed' && (
+                    <button onClick={() => setPostTrainingSession(session)} className="p-2 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/40">
+                      <ClipboardCheck size={16} />
+                    </button>
+                  )}
+                  <span className={clsx('px-3 py-1 rounded-lg text-xs font-medium',
+                    session.status === 'completed' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                    session.status === 'in_progress' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
+                    'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                  )}>
+                    {session.status === 'completed' ? 'Completato' :
+                     session.status === 'in_progress' ? 'In corso' : 'Pianificato'}
+                  </span>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <button onClick={() => openBuilder(session)} className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 text-xs font-medium">
-                  Builder
-                </button>
-                {session.status !== 'completed' && (
-                  <button onClick={() => setPostTrainingSession(session)} className="p-2 bg-green-50 text-green-600 rounded-lg hover:bg-green-100">
-                    <ClipboardCheck size={16} />
-                  </button>
-                )}
-              <span className={clsx('px-3 py-1 rounded-lg text-xs font-medium',
-                session.status === 'completed' ? 'bg-green-100 text-green-700' :
-                session.status === 'in_progress' ? 'bg-yellow-100 text-yellow-700' :
-                'bg-blue-100 text-blue-700'
-              )}>
-                {session.status === 'completed' ? 'Completato' :
-                 session.status === 'in_progress' ? 'In corso' : 'Pianificato'}
-              </span>
-              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
-      {sessions.length === 0 && !showCreate && (
-        <div className="text-center py-12 text-gray-400">
+      {sessions.length === 0 && !showCreate && viewMode === 'list' && (
+        <div className="text-center py-12 text-gray-400 dark:text-gray-500">
           <Calendar size={48} className="mx-auto mb-3 opacity-50" />
           <p>Nessun allenamento. Crea il primo!</p>
         </div>

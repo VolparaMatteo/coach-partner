@@ -2,11 +2,13 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/auth'
 import { useThemeStore } from '@/store/theme'
 import QuickNoteFAB from '@/components/QuickNote/QuickNoteFAB'
+import ToastContainer from '@/components/Toast/ToastContainer'
+import GlobalSearch from '@/components/Search/GlobalSearch'
 import {
   Home, Users, Calendar, Trophy, BarChart3,
-  Settings, LogOut, Menu, X, Moon, Sun
+  Settings, LogOut, Menu, X, Moon, Sun, Search
 } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import clsx from 'clsx'
 
 const navItems = [
@@ -23,6 +25,19 @@ export default function Layout() {
   const { dark, toggle } = useThemeStore()
   const navigate = useNavigate()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [searchOpen, setSearchOpen] = useState(false)
+
+  // Cmd+K / Ctrl+K shortcut for search
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault()
+        setSearchOpen(true)
+      }
+    }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [])
 
   const handleLogout = () => {
     logout()
@@ -43,6 +58,15 @@ export default function Layout() {
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
             {user?.first_name} {user?.last_name}
           </p>
+          {/* Search bar */}
+          <button
+            onClick={() => setSearchOpen(true)}
+            className="mt-3 w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm text-gray-400 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+          >
+            <Search size={14} />
+            <span className="flex-1 text-left">Cerca...</span>
+            <kbd className="text-[10px] text-gray-400 border border-gray-200 dark:border-gray-700 rounded px-1">⌘K</kbd>
+          </button>
         </div>
         <nav className="flex-1 p-4 space-y-1">
           {navItems.map(({ to, icon: Icon, label }) => (
@@ -137,6 +161,12 @@ export default function Layout() {
 
         {/* Quick Note FAB */}
         <QuickNoteFAB />
+
+        {/* Toast Notifications */}
+        <ToastContainer />
+
+        {/* Global Search */}
+        <GlobalSearch open={searchOpen} onClose={() => setSearchOpen(false)} />
 
         {/* Mobile bottom nav */}
         <nav className="lg:hidden flex items-center justify-around bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 py-2">

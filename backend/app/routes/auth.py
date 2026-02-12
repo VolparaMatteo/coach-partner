@@ -1,3 +1,7 @@
+import hashlib
+import secrets
+from datetime import datetime, timedelta
+
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import (
     create_access_token, create_refresh_token,
@@ -107,3 +111,51 @@ def update_me():
 
     db.session.commit()
     return jsonify({"user": user.to_dict()})
+
+
+@auth_bp.route("/forgot-password", methods=["POST"])
+def forgot_password():
+    data = request.get_json()
+    if not data or not data.get("email"):
+        return jsonify({"error": "Email is required"}), 400
+
+    user = User.query.filter_by(email=data["email"].lower().strip()).first()
+    if not user:
+        # Don't reveal whether the email exists
+        return jsonify({"message": "If the email is registered, a reset link has been sent"}), 200
+
+    token = secrets.token_urlsafe(32)
+    token_hash = hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+    user.reset_token = token_hash
+    user.reset_token_expires = datetime.utcnow() + timedelta(minutes=30)
+    db.session.commit()
+
+    # In production, send the token via email instead of returning it
+    return jsonify({
+        "message": "If the email is registered, a reset link has been sent",
+        "reset_token": token,
+    }), 200
+
+
+@auth_bp.route("/reset-password", methods=["POST"])
+def reset_password():
+    data = request.get_json()
+    if not data or not data.get("token") or not data.get("new_password"):
+        return jsonify({"error": "Token and new_password are required"}), 400
+
+    if len(data["new_password"]) < 8:
+        return jsonify({"error": "Password must be at least 8 characters"}), 400
+
+    token_hash = hashlib.sha256(data["token"].encode("utf-8")).hexdigest()
+    user = User.query.filter_by(reset_token=token_hash).first()
+
+    if not user or not user.reset_token_expires or user.reset_token_expires < datetime.utcnow():
+        return jsonify({"error": "Invalid or expired token"}), 400
+
+    user.set_password(data["new_password"])
+    user.reset_token = None
+    user.reset_token_expires = None
+    db.session.commit()
+
+    return jsonify({"message": "Password aggiornata"}), 200

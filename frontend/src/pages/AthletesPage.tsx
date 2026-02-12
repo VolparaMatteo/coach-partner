@@ -4,9 +4,10 @@ import type { Athlete, SportConfig } from '@/types'
 import { useAuthStore } from '@/store/auth'
 import { useTeamStore } from '@/store/team'
 import AthleteDetail from '@/components/Athletes/AthleteDetail'
+import AthleteComparison from '@/components/Athletes/AthleteComparison'
 import CSVImport from '@/components/Athletes/CSVImport'
 import TeamSelector from '@/components/TeamSelector/TeamSelector'
-import { Users, Plus, Search, X, UserCircle, Upload } from 'lucide-react'
+import { Users, Plus, Search, X, UserCircle, Upload, BarChart3 } from 'lucide-react'
 import clsx from 'clsx'
 
 export default function AthletesPage() {
@@ -14,6 +15,7 @@ export default function AthletesPage() {
   const { teams, activeTeamId, setTeams } = useTeamStore()
   const [selectedAthleteId, setSelectedAthleteId] = useState<number | null>(null)
   const [showCSVImport, setShowCSVImport] = useState(false)
+  const [showComparison, setShowComparison] = useState(false)
   const [athletes, setAthletes] = useState<Athlete[]>([])
   const [sportConfig, setSportConfig] = useState<SportConfig | null>(null)
   const [loading, setLoading] = useState(true)
@@ -88,6 +90,10 @@ export default function AthletesPage() {
     return <AthleteDetail athleteId={selectedAthleteId} sportConfig={sportConfig} onBack={() => setSelectedAthleteId(null)} />
   }
 
+  if (showComparison && activeTeamId) {
+    return <AthleteComparison teamId={activeTeamId} sportConfig={sportConfig} onBack={() => setShowComparison(false)} />
+  }
+
   return (
     <div className="max-w-5xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
@@ -99,6 +105,9 @@ export default function AthletesPage() {
         </div>
         <div className="flex gap-2 items-center">
           <TeamSelector />
+          <button onClick={() => setShowComparison(true)} className="btn-secondary flex items-center gap-2 text-sm">
+            <BarChart3 size={16} /> Confronta
+          </button>
           <button onClick={() => setShowCSVImport(!showCSVImport)} className="btn-secondary flex items-center gap-2 text-sm">
             <Upload size={16} /> CSV
           </button>

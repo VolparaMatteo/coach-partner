@@ -20,6 +20,10 @@ class User(db.Model):
     years_experience = db.Column(db.Integer, nullable=True)
     certifications = db.Column(db.Text, nullable=True)  # JSON list
 
+    # Password reset
+    reset_token = db.Column(db.String(255), nullable=True)
+    reset_token_expires = db.Column(db.DateTime, nullable=True)
+
     # Onboarding state
     onboarding_completed = db.Column(db.Boolean, default=False)
     onboarding_step = db.Column(db.Integer, default=0)
