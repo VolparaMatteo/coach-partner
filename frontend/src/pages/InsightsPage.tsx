@@ -6,6 +6,7 @@ import TeamSelector from '@/components/TeamSelector/TeamSelector'
 import TeamStatsDashboard from '@/components/Stats/TeamStatsDashboard'
 import CalendarView from '@/components/Calendar/CalendarView'
 import { exportReportPDF } from '@/utils/pdfExport'
+import { PageSkeleton } from '@/components/Skeleton/Skeleton'
 import { BarChart3, Zap, FileText, ThumbsUp, ThumbsDown, Calendar, Download } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -70,9 +71,7 @@ export default function InsightsPage() {
   }
 
   if (loading) {
-    return <div className="flex items-center justify-center h-64">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600" />
-    </div>
+    return <PageSkeleton />
   }
 
   return (

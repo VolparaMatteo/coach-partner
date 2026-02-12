@@ -3,6 +3,7 @@ import api from '@/api/client'
 import type { Athlete, Evaluation, WellnessEntry, Note, SportConfig } from '@/types'
 import InjuryManager from '@/components/Injuries/InjuryManager'
 import WellnessDashboard from '@/components/Wellness/WellnessDashboard'
+import PhotoUpload from '@/components/Athletes/PhotoUpload'
 import { exportAthletePDF } from '@/utils/pdfExport'
 import {
   ArrowLeft, UserCircle, Activity, Target, FileText,
@@ -106,9 +107,12 @@ export default function AthleteDetail({ athleteId, sportConfig, onBack }: Props)
 
       <div className="card">
         <div className="flex items-start gap-4">
-          <div className="w-20 h-20 rounded-2xl bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center text-brand-700 dark:text-brand-400 font-bold text-3xl shrink-0">
-            {athlete.jersey_number || <UserCircle size={40} />}
-          </div>
+          <PhotoUpload
+            athleteId={athlete.id}
+            currentPhotoUrl={athlete.photo_url}
+            onPhotoUpdated={(url) => setData(prev => prev ? { ...prev, athlete: { ...prev.athlete, photo_url: url } } : null)}
+            size="lg"
+          />
           <div className="flex-1">
             <div className="flex items-center gap-3">
               <h1 className="text-2xl font-bold">{athlete.full_name}</h1>

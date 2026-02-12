@@ -10,6 +10,7 @@ class Attendance(db.Model):
     training_session_id = db.Column(db.Integer, db.ForeignKey("training_sessions.id"), nullable=False, index=True)
 
     status = db.Column(db.String(20), default="present")  # present, absent, injured, excused
+    minutes_trained = db.Column(db.Integer, nullable=True)
     rpe = db.Column(db.Float, nullable=True)  # Individual RPE for this session
     notes = db.Column(db.Text, nullable=True)
 
@@ -21,6 +22,7 @@ class Attendance(db.Model):
             "athlete_id": self.athlete_id,
             "training_session_id": self.training_session_id,
             "status": self.status,
+            "minutes_trained": self.minutes_trained,
             "rpe": self.rpe,
             "notes": self.notes,
         }

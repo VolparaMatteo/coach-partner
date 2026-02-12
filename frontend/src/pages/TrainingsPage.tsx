@@ -5,6 +5,7 @@ import { useAuthStore } from '@/store/auth'
 import { useTeamStore } from '@/store/team'
 import { useToastStore } from '@/store/toast'
 import TrainingBuilder from '@/components/TrainingBuilder/TrainingBuilder'
+import AttendanceTracker from '@/components/Attendance/AttendanceTracker'
 import FieldMode from '@/components/FieldMode/FieldMode'
 import PostTrainingFlow from '@/components/PostTraining/PostTrainingFlow'
 import ExerciseLibrary from '@/components/ExerciseLibrary/ExerciseLibrary'
@@ -12,6 +13,7 @@ import TeamSelector from '@/components/TeamSelector/TeamSelector'
 import TemplatePicker from '@/components/Templates/TemplatePicker'
 import WeeklyPlanner from '@/components/Planner/WeeklyPlanner'
 import { Calendar, Plus, X, Clock, Target, BookOpen, ClipboardCheck, BookMarked, CalendarDays, List, Save } from 'lucide-react'
+import { PageSkeleton } from '@/components/Skeleton/Skeleton'
 import clsx from 'clsx'
 
 export default function TrainingsPage() {
@@ -142,11 +144,7 @@ export default function TrainingsPage() {
     setShowLibrary(false)
   }
 
-  if (loading) {
-    return <div className="flex items-center justify-center h-64">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600" />
-    </div>
-  }
+  if (loading) return <PageSkeleton />
 
   // Field mode
   if (fieldModeSession) {
@@ -209,6 +207,11 @@ export default function TrainingsPage() {
           onSave={saveBuilder}
           onStartFieldMode={() => setFieldModeSession(editingSession)}
         />
+        {activeTeamId && (
+          <div className="card">
+            <AttendanceTracker sessionId={editingSession.id} teamId={activeTeamId} />
+          </div>
+        )}
       </div>
     )
   }

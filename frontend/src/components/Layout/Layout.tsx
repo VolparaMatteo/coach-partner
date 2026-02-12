@@ -4,6 +4,8 @@ import { useThemeStore } from '@/store/theme'
 import QuickNoteFAB from '@/components/QuickNote/QuickNoteFAB'
 import ToastContainer from '@/components/Toast/ToastContainer'
 import GlobalSearch from '@/components/Search/GlobalSearch'
+import NotificationCenter from '@/components/Notifications/NotificationCenter'
+import { useReminders } from '@/hooks/useReminders'
 import {
   Home, Users, Calendar, Trophy, BarChart3,
   Settings, LogOut, Menu, X, Moon, Sun, Search
@@ -26,6 +28,7 @@ export default function Layout() {
   const navigate = useNavigate()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
+  useReminders()
 
   // Cmd+K / Ctrl+K shortcut for search
   useEffect(() => {
@@ -51,9 +54,12 @@ export default function Layout() {
         <div className="p-6 border-b border-gray-100 dark:border-gray-800">
           <div className="flex items-center justify-between">
             <h1 className="text-xl font-bold text-brand-700 dark:text-brand-400">Coach Partner</h1>
-            <button onClick={toggle} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" title={dark ? 'Modalità chiara' : 'Modalità scura'}>
-              {dark ? <Sun size={18} className="text-yellow-500" /> : <Moon size={18} className="text-gray-400" />}
-            </button>
+            <div className="flex items-center gap-1">
+              <NotificationCenter />
+              <button onClick={toggle} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" title={dark ? 'Modalità chiara' : 'Modalità scura'}>
+                {dark ? <Sun size={18} className="text-yellow-500" /> : <Moon size={18} className="text-gray-400" />}
+              </button>
+            </div>
           </div>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
             {user?.first_name} {user?.last_name}

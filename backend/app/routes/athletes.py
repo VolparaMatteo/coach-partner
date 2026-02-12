@@ -1,8 +1,19 @@
-from flask import Blueprint, request, jsonify
+import os
+import time
+
+from flask import Blueprint, request, jsonify, current_app
+from werkzeug.utils import secure_filename
 from app import db
 from app.models.athlete import Athlete
 from app.models.team import Team
 from app.utils.auth import coach_required
+
+ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png", "webp"}
+MAX_CONTENT_LENGTH = 5 * 1024 * 1024  # 5 MB
+
+
+def allowed_file(filename):
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 
 athletes_bp = Blueprint("athletes", __name__)
 
@@ -116,3 +127,54 @@ def delete_athlete(user, athlete_id):
     db.session.delete(athlete)
     db.session.commit()
     return jsonify({"message": "Athlete deleted"})
+
+
+@athletes_bp.route("/<int:athlete_id>/photo", methods=["POST"])
+@coach_required
+def upload_photo(user, athlete_id):
+    athlete = Athlete.query.get(athlete_id)
+    if not athlete:
+        return jsonify({"error": "Athlete not found"}), 404
+
+    team = Team.query.filter_by(id=athlete.team_id, coach_id=user.id).first()
+    if not team:
+        return jsonify({"error": "Not authorized"}), 403
+
+    if "photo" not in request.files:
+        return jsonify({"error": "No photo file provided"}), 400
+
+    file = request.files["photo"]
+    if file.filename == "":
+        return jsonify({"error": "No file selected"}), 400
+
+    if not allowed_file(file.filename):
+        return jsonify({"error": "File type not allowed. Use jpg, jpeg, png, or webp"}), 400
+
+    # Check file size
+    file.seek(0, os.SEEK_END)
+    size = file.tell()
+    file.seek(0)
+    if size > MAX_CONTENT_LENGTH:
+        return jsonify({"error": "File too large. Maximum size is 5 MB"}), 413
+
+    # Build safe filename: {athlete_id}_{timestamp}.{ext}
+    ext = secure_filename(file.filename).rsplit(".", 1)[1].lower()
+    timestamp = int(time.time())
+    filename = f"{athlete_id}_{timestamp}.{ext}"
+
+    upload_dir = os.path.join(current_app.root_path, "..", "uploads", "avatars")
+    os.makedirs(upload_dir, exist_ok=True)
+
+    filepath = os.path.join(upload_dir, filename)
+    file.save(filepath)
+
+    # Update athlete record with the URL path served by the app
+    photo_url = f"/api/uploads/avatars/{filename}"
+    athlete.photo_url = photo_url
+    db.session.commit()
+
+    return jsonify({
+        "message": "Photo uploaded successfully",
+        "photo_url": photo_url,
+        "athlete": athlete.to_dict(),
+    })

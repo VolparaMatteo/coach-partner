@@ -5,6 +5,7 @@ import { useAuthStore } from '@/store/auth'
 import { useTeamStore } from '@/store/team'
 import MatchDetail from '@/components/Match/MatchDetail'
 import TeamSelector from '@/components/TeamSelector/TeamSelector'
+import { PageSkeleton } from '@/components/Skeleton/Skeleton'
 import { Trophy, Plus, X, MapPin } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -68,11 +69,7 @@ export default function MatchesPage() {
     )
   }
 
-  if (loading) {
-    return <div className="flex items-center justify-center h-64">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600" />
-    </div>
-  }
+  if (loading) return <PageSkeleton />
 
   if (selectedMatch && activeTeamId) {
     return <MatchDetail

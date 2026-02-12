@@ -7,6 +7,7 @@ import AthleteDetail from '@/components/Athletes/AthleteDetail'
 import AthleteComparison from '@/components/Athletes/AthleteComparison'
 import CSVImport from '@/components/Athletes/CSVImport'
 import TeamSelector from '@/components/TeamSelector/TeamSelector'
+import { PageSkeleton } from '@/components/Skeleton/Skeleton'
 import { Users, Plus, Search, X, UserCircle, Upload, BarChart3 } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -80,11 +81,7 @@ export default function AthletesPage() {
     }
   }
 
-  if (loading) {
-    return <div className="flex items-center justify-center h-64">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600" />
-    </div>
-  }
+  if (loading) return <PageSkeleton />
 
   if (selectedAthleteId) {
     return <AthleteDetail athleteId={selectedAthleteId} sportConfig={sportConfig} onBack={() => setSelectedAthleteId(null)} />

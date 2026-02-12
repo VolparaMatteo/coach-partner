@@ -1,4 +1,6 @@
-from flask import Flask
+import os
+
+from flask import Flask, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_jwt_extended import JWTManager
@@ -34,6 +36,7 @@ def create_app(config_name="default"):
     from app.routes.dashboard import dashboard_bp
     from app.routes.templates import templates_bp
     from app.routes.search import search_bp
+    from app.routes.attendance import attendance_bp
 
     app.register_blueprint(auth_bp, url_prefix="/api/auth")
     app.register_blueprint(onboarding_bp, url_prefix="/api/onboarding")
@@ -49,9 +52,16 @@ def create_app(config_name="default"):
     app.register_blueprint(dashboard_bp, url_prefix="/api/dashboard")
     app.register_blueprint(templates_bp, url_prefix="/api/templates")
     app.register_blueprint(search_bp, url_prefix="/api/search")
+    app.register_blueprint(attendance_bp, url_prefix="/api/attendance")
 
     @app.route("/api/health")
     def health():
         return {"status": "ok", "app": "Coach Partner"}
+
+    @app.route("/api/uploads/<path:filename>")
+    def serve_upload(filename):
+        return send_from_directory(
+            os.path.join(app.root_path, "..", "uploads"), filename
+        )
 
     return app
