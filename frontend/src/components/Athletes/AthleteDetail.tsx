@@ -5,6 +5,8 @@ import InjuryManager from '@/components/Injuries/InjuryManager'
 import WellnessDashboard from '@/components/Wellness/WellnessDashboard'
 import PhotoUpload from '@/components/Athletes/PhotoUpload'
 import AthleteCharts from '@/components/Athletes/AthleteCharts'
+import ActivityTimeline from '@/components/Athletes/ActivityTimeline'
+import GoalTracker from '@/components/Athletes/GoalTracker'
 import { exportAthletePDF } from '@/utils/pdfExport'
 import {
   ArrowLeft, UserCircle, Activity, Target, FileText,
@@ -35,7 +37,7 @@ export default function AthleteDetail({ athleteId, sportConfig, onBack }: Props)
   const [data, setData] = useState<AthleteData | null>(null)
   const [loading, setLoading] = useState(true)
   const [newNote, setNewNote] = useState('')
-  const [activeTab, setActiveTab] = useState<'overview' | 'evaluations' | 'wellness' | 'injuries' | 'notes'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'evaluations' | 'wellness' | 'injuries' | 'notes' | 'goals' | 'timeline'>('overview')
 
   useEffect(() => {
     api.get(`/dashboard/athlete/${athleteId}`).then(({ data }) => {
@@ -169,8 +171,10 @@ export default function AthleteDetail({ athleteId, sportConfig, onBack }: Props)
           { key: 'overview' as const, label: 'Panoramica' },
           { key: 'evaluations' as const, label: 'Valutazioni' },
           { key: 'wellness' as const, label: 'Wellness' },
+          { key: 'goals' as const, label: 'Obiettivi' },
           { key: 'injuries' as const, label: 'Infortuni' },
           { key: 'notes' as const, label: 'Note' },
+          { key: 'timeline' as const, label: 'Timeline' },
         ]).map(tab => (
           <button key={tab.key} onClick={() => setActiveTab(tab.key)}
             className={clsx('flex-1 py-2.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap px-3',
@@ -296,6 +300,18 @@ export default function AthleteDetail({ athleteId, sportConfig, onBack }: Props)
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {activeTab === 'goals' && (
+        <div className="card">
+          <GoalTracker athleteId={athleteId} />
+        </div>
+      )}
+
+      {activeTab === 'timeline' && (
+        <div className="card">
+          <ActivityTimeline athleteId={athleteId} />
         </div>
       )}
     </div>

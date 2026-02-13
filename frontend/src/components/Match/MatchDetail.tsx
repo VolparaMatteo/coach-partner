@@ -3,6 +3,7 @@ import api from '@/api/client'
 import type { Match, Athlete, SportConfig } from '@/types'
 import { useAuthStore } from '@/store/auth'
 import FormationEditor from '@/components/Formation/FormationEditor'
+import CallupManager from '@/components/Match/CallupManager'
 import {
   ArrowLeft, Shield, Swords, Users, ClipboardList, Check,
   MapPin, Clock, Zap, Star, ChevronRight, Save, X, LayoutGrid
@@ -275,28 +276,7 @@ export default function MatchDetail({ match, teamId, sportConfig, onBack, onUpda
 
       {activeTab === 'roster' && (
         <div className="card">
-          <h3 className="font-semibold mb-4">Convocati ({calledUp.length}/{athletes.length})</h3>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2">
-            {athletes.map(a => (
-              <button key={a.id} onClick={() => toggleCalledUp(a.id)}
-                className={clsx('flex items-center gap-3 p-3 rounded-xl border-2 transition-colors text-left',
-                  calledUp.includes(a.id) ? 'border-brand-500 bg-brand-50' : 'border-gray-200 hover:border-gray-300'
-                )}>
-                <div className={clsx('w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold',
-                  calledUp.includes(a.id) ? 'bg-brand-600 text-white' : 'bg-gray-200 text-gray-500'
-                )}>
-                  {calledUp.includes(a.id) ? <Check size={14} /> : a.jersey_number || '?'}
-                </div>
-                <div>
-                  <p className="font-medium text-sm">{a.full_name}</p>
-                  <p className="text-xs text-gray-400">
-                    {sportConfig?.positions.find(p => p.value === a.position)?.label || ''}
-                  </p>
-                </div>
-              </button>
-            ))}
-          </div>
-          <button onClick={saveGamePlan} className="btn-primary mt-4 flex items-center gap-2"><Save size={16} /> Salva Convocati</button>
+          <CallupManager match={match} teamId={teamId} />
         </div>
       )}
 

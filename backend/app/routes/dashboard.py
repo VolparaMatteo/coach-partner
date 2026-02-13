@@ -485,3 +485,147 @@ def training_suggestions(user, team_id):
     }
 
     return jsonify(suggestions), 200
+
+
+@dashboard_bp.route("/achievements", methods=["GET"])
+@coach_required
+def achievements(user):
+    """Gamification achievements for the coach."""
+    achievements = []
+
+    # Count-based achievements
+    teams = Team.query.filter_by(coach_id=user.id).all()
+    team_ids = [t.id for t in teams]
+
+    total_athletes = Athlete.query.filter(Athlete.team_id.in_(team_ids)).count() if team_ids else 0
+    total_sessions = TrainingSession.query.filter(TrainingSession.team_id.in_(team_ids)).count() if team_ids else 0
+    total_matches = Match.query.filter(Match.team_id.in_(team_ids)).count() if team_ids else 0
+    total_evals = Evaluation.query.join(Athlete).filter(Athlete.team_id.in_(team_ids)).count() if team_ids else 0
+    total_notes = Note.query.filter_by(coach_id=user.id).count()
+
+    # Define badge thresholds
+    badges = [
+        {'key': 'first_athlete', 'title': 'Prima Rosa', 'desc': 'Aggiungi il primo atleta', 'icon': 'users', 'threshold': 1, 'current': total_athletes},
+        {'key': 'squad_10', 'title': 'Rosa Completa', 'desc': 'Aggiungi 10 atleti', 'icon': 'users', 'threshold': 10, 'current': total_athletes},
+        {'key': 'squad_20', 'title': 'Grande Squadra', 'desc': 'Aggiungi 20 atleti', 'icon': 'users', 'threshold': 20, 'current': total_athletes},
+        {'key': 'first_session', 'title': 'Primo Fischio', 'desc': 'Crea il primo allenamento', 'icon': 'calendar', 'threshold': 1, 'current': total_sessions},
+        {'key': 'sessions_10', 'title': 'Allenatore Costante', 'desc': '10 allenamenti creati', 'icon': 'calendar', 'threshold': 10, 'current': total_sessions},
+        {'key': 'sessions_50', 'title': 'Macchina da Guerra', 'desc': '50 allenamenti creati', 'icon': 'calendar', 'threshold': 50, 'current': total_sessions},
+        {'key': 'sessions_100', 'title': 'Centurione', 'desc': '100 allenamenti creati', 'icon': 'trophy', 'threshold': 100, 'current': total_sessions},
+        {'key': 'first_match', 'title': 'Debutto', 'desc': 'Prima gara registrata', 'icon': 'trophy', 'threshold': 1, 'current': total_matches},
+        {'key': 'matches_10', 'title': 'Veterano', 'desc': '10 gare registrate', 'icon': 'trophy', 'threshold': 10, 'current': total_matches},
+        {'key': 'matches_50', 'title': 'Tattico Esperto', 'desc': '50 gare registrate', 'icon': 'trophy', 'threshold': 50, 'current': total_matches},
+        {'key': 'first_eval', 'title': 'Occhio Clinico', 'desc': 'Prima valutazione', 'icon': 'target', 'threshold': 1, 'current': total_evals},
+        {'key': 'evals_50', 'title': 'Analista', 'desc': '50 valutazioni create', 'icon': 'target', 'threshold': 50, 'current': total_evals},
+        {'key': 'evals_100', 'title': 'Scout Professionista', 'desc': '100 valutazioni', 'icon': 'target', 'threshold': 100, 'current': total_evals},
+        {'key': 'first_note', 'title': 'Prima Nota', 'desc': 'Scrivi la prima nota', 'icon': 'file-text', 'threshold': 1, 'current': total_notes},
+        {'key': 'notes_50', 'title': 'Cronista', 'desc': '50 note scritte', 'icon': 'file-text', 'threshold': 50, 'current': total_notes},
+    ]
+
+    # Calculate
+    for b in badges:
+        b['unlocked'] = b['current'] >= b['threshold']
+        b['progress'] = min(100, int((b['current'] / b['threshold']) * 100))
+
+    # Coach level
+    unlocked_count = sum(1 for b in badges if b['unlocked'])
+    level = 1 + unlocked_count // 3  # level up every 3 badges
+    xp = unlocked_count * 100
+    next_level_xp = level * 300
+
+    return jsonify({
+        'badges': badges,
+        'level': level,
+        'xp': xp,
+        'next_level_xp': next_level_xp,
+        'total_badges': len(badges),
+        'unlocked_badges': unlocked_count,
+    })
+
+
+@dashboard_bp.route("/activity/<int:athlete_id>", methods=["GET"])
+@coach_required
+def activity_log(user, athlete_id):
+    """Aggregated chronological timeline of all events for an athlete."""
+    athlete = Athlete.query.get(athlete_id)
+    if not athlete:
+        return jsonify({"error": "Athlete not found"}), 404
+
+    team = Team.query.filter_by(id=athlete.team_id, coach_id=user.id).first()
+    if not team:
+        return jsonify({"error": "Not authorized"}), 403
+
+    timeline = []
+
+    # 1. Evaluations
+    evaluations = Evaluation.query.filter_by(athlete_id=athlete.id).all()
+    for e in evaluations:
+        timeline.append({
+            "type": "evaluation",
+            "date": e.date.isoformat() if e.date else None,
+            "data": {
+                "overall": e.overall,
+                "comment": e.comment,
+            },
+        })
+
+    # 2. Notes (entity_type='athlete', entity_id=athlete_id)
+    notes = Note.query.filter_by(
+        entity_type="athlete", entity_id=athlete.id
+    ).all()
+    for n in notes:
+        timeline.append({
+            "type": "note",
+            "date": n.created_at.strftime("%Y-%m-%d") if n.created_at else None,
+            "data": {
+                "text": n.text,
+                "is_quick_note": n.is_quick_note,
+            },
+        })
+
+    # 3. Injuries
+    injuries = Injury.query.filter_by(athlete_id=athlete.id).all()
+    for i in injuries:
+        timeline.append({
+            "type": "injury",
+            "date": i.date_occurred.isoformat() if i.date_occurred else None,
+            "data": {
+                "injury_type": i.injury_type,
+                "body_part": i.body_part,
+                "status": i.status,
+            },
+        })
+
+    # 4. Attendance records
+    attendances = Attendance.query.join(TrainingSession).filter(
+        Attendance.athlete_id == athlete.id
+    ).all()
+    for a in attendances:
+        session_date = a.session.date if a.session else None
+        timeline.append({
+            "type": "attendance",
+            "date": session_date.isoformat() if session_date else None,
+            "data": {
+                "status": a.status,
+            },
+        })
+
+    # 5. Wellness entries
+    wellness_entries = WellnessEntry.query.filter_by(athlete_id=athlete.id).all()
+    for w in wellness_entries:
+        timeline.append({
+            "type": "wellness",
+            "date": w.date.isoformat() if w.date else None,
+            "data": {
+                "energy": w.energy,
+                "mood": w.mood,
+            },
+        })
+
+    # Sort by date descending (most recent first), entries without date go last
+    timeline.sort(key=lambda x: x["date"] or "", reverse=True)
+
+    # Limit to 50
+    timeline = timeline[:50]
+
+    return jsonify({"timeline": timeline})

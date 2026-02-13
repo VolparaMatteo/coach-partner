@@ -7,6 +7,8 @@ import MatchDetail from '@/components/Match/MatchDetail'
 import TeamSelector from '@/components/TeamSelector/TeamSelector'
 import { PageSkeleton } from '@/components/Skeleton/Skeleton'
 import { exportMatchToICS, exportAllToICS } from '@/utils/calendarExport'
+import EmptyState from '@/components/EmptyState/EmptyState'
+import { AnimatedPage } from '@/components/Motion/AnimatedPage'
 import { Trophy, Plus, X, MapPin, Download, Printer } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -191,10 +193,12 @@ export default function MatchesPage() {
       </div>
 
       {matches.length === 0 && !showCreate && (
-        <div className="text-center py-12 text-gray-400">
-          <Trophy size={48} className="mx-auto mb-3 opacity-50" />
-          <p>Nessuna gara. Aggiungine una!</p>
-        </div>
+        <EmptyState
+          icon={<Trophy size={36} className="text-gray-400" />}
+          title="Nessuna gara"
+          description="Registra la prossima partita del tuo team!"
+          action={<button onClick={() => setShowCreate(true)} className="btn-primary text-sm"><Plus size={16} className="inline mr-1" /> Nuova Gara</button>}
+        />
       )}
     </div>
   )

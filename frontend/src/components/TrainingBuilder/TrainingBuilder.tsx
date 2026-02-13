@@ -11,7 +11,7 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 import {
   GripVertical, Plus, Trash2, ChevronDown, ChevronUp,
-  Clock, Flame, Target, Save, Play
+  Clock, Flame, Target, Save, Play, Video
 } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -192,6 +192,15 @@ function SortableBlock({ block, index, expanded, blockTypes, onToggleExpand, onU
             <input className="input-field text-sm" placeholder="Varianti e progressioni..."
               value={block.variations || ''} onChange={(e) => onUpdate({ variations: e.target.value || null })} />
           </div>
+          <div>
+            <label className="label flex items-center gap-1"><Video size={14} /> Video / Link</label>
+            <input className="input-field text-sm" placeholder="https://youtube.com/watch?v=..."
+              value={block.video_url || ''} onChange={(e) => onUpdate({ video_url: e.target.value || null })} />
+            {block.video_url && (
+              <a href={block.video_url} target="_blank" rel="noopener noreferrer"
+                className="text-xs text-brand-600 hover:underline mt-1 inline-block">Apri video →</a>
+            )}
+          </div>
         </div>
       )}
     </div>
@@ -229,6 +238,7 @@ export default function TrainingBuilder({ blocks, sportConfig, onChange, onSave,
       completed: false,
       actual_rpe: null,
       notes: null,
+      video_url: null,
     }
     onChange([...blocks, newBlock])
     setExpandedBlock(blocks.length)

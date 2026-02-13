@@ -9,6 +9,8 @@ import BulkActions from '@/components/Athletes/BulkActions'
 import CSVImport from '@/components/Athletes/CSVImport'
 import TeamSelector from '@/components/TeamSelector/TeamSelector'
 import { PageSkeleton } from '@/components/Skeleton/Skeleton'
+import EmptyState from '@/components/EmptyState/EmptyState'
+import { AnimatedPage, AnimatedList } from '@/components/Motion/AnimatedPage'
 import { Users, Plus, Search, X, UserCircle, Upload, BarChart3, CheckSquare } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -222,10 +224,12 @@ export default function AthletesPage() {
       </div>
 
       {filteredAthletes.length === 0 && (
-        <div className="text-center py-12 text-gray-400 dark:text-gray-500">
-          <Users size={48} className="mx-auto mb-3 opacity-50" />
-          <p>{search ? 'Nessun risultato' : 'Nessun atleta. Aggiungine uno!'}</p>
-        </div>
+        <EmptyState
+          icon={<Users size={36} className="text-gray-400" />}
+          title={search ? 'Nessun risultato' : 'Nessun atleta'}
+          description={search ? 'Prova con un termine diverso' : 'Aggiungi il primo atleta alla tua rosa!'}
+          action={!search ? <button onClick={() => setShowAdd(true)} className="btn-primary text-sm"><Plus size={16} className="inline mr-1" /> Aggiungi Atleta</button> : undefined}
+        />
       )}
     </div>
   )

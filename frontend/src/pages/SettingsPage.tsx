@@ -6,8 +6,9 @@ import { useToastStore } from '@/store/toast'
 import api from '@/api/client'
 import SeasonManager from '@/components/Seasons/SeasonManager'
 import StaffManager from '@/components/Staff/StaffManager'
+import CoachBadges from '@/components/Gamification/CoachBadges'
 import { AnimatedPage } from '@/components/Motion/AnimatedPage'
-import { Settings, User, Save, Check, Moon, Sun, Palette, Globe, Download, Database } from 'lucide-react'
+import { Settings, User, Save, Check, Moon, Sun, Palette, Globe, Download, Database, Trophy } from 'lucide-react'
 import type { Locale } from '@/i18n/translations'
 import clsx from 'clsx'
 
@@ -181,6 +182,14 @@ export default function SettingsPage() {
               <span className="text-sm font-medium">{dark ? t('settings.to_light') : t('settings.to_dark')}</span>
             </button>
           </div>
+        </div>
+
+        {/* Gamification */}
+        <div className="card">
+          <h2 className="font-semibold mb-4 flex items-center gap-2">
+            <Trophy size={18} /> Badge & Traguardi
+          </h2>
+          <CoachBadges />
         </div>
 
         <div className="card">

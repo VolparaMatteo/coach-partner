@@ -3,6 +3,7 @@ from flask import Blueprint, request, jsonify
 from app import db
 from app.models.match import Match
 from app.models.team import Team
+from app.models.athlete import Athlete
 from app.utils.auth import coach_required
 
 matches_bp = Blueprint("matches", __name__)
@@ -112,3 +113,71 @@ def delete_match(user, match_id):
     db.session.delete(match)
     db.session.commit()
     return jsonify({"message": "Match deleted"})
+
+# ── Callup Management ─────────────────────────────────────────────────
+
+
+@matches_bp.route('/<int:match_id>/callup', methods=['GET'])
+@coach_required
+def get_callup(match_id, user):
+    match = Match.query.get_or_404(match_id)
+    team = Team.query.filter_by(id=match.team_id, coach_id=user.id).first()
+    if not team:
+        return jsonify({'error': 'Not found'}), 404
+
+    called_ids = json.loads(match.called_up) if match.called_up else []
+    athletes = Athlete.query.filter(Athlete.id.in_(called_ids)).all() if called_ids else []
+
+    return jsonify({
+        'match': match.to_dict(),
+        'called_up': [a.to_dict() for a in athletes],
+        'available': [a.to_dict() for a in Athlete.query.filter_by(team_id=team.id, status='available').all()],
+    })
+
+
+@matches_bp.route('/<int:match_id>/callup', methods=['PUT'])
+@coach_required
+def update_callup(match_id, user):
+    match = Match.query.get_or_404(match_id)
+    team = Team.query.filter_by(id=match.team_id, coach_id=user.id).first()
+    if not team:
+        return jsonify({'error': 'Not found'}), 404
+
+    data = request.get_json()
+    athlete_ids = data.get('athlete_ids', [])
+
+    # Verify all athletes belong to the team
+    valid_ids = [a.id for a in Athlete.query.filter(
+        Athlete.id.in_(athlete_ids), Athlete.team_id == team.id
+    ).all()]
+
+    match.called_up = json.dumps(valid_ids)
+    db.session.commit()
+
+    return jsonify({'match': match.to_dict(), 'called_count': len(valid_ids)})
+
+
+@matches_bp.route('/<int:match_id>/callup/history', methods=['GET'])
+@coach_required
+def callup_history(match_id, user):
+    match = Match.query.get_or_404(match_id)
+    team = Team.query.filter_by(id=match.team_id, coach_id=user.id).first()
+    if not team:
+        return jsonify({'error': 'Not found'}), 404
+
+    recent_matches = Match.query.filter_by(team_id=team.id).order_by(Match.date.desc()).limit(10).all()
+
+    # Count callups per athlete
+    athlete_counts = {}
+    for m in recent_matches:
+        ids = json.loads(m.called_up) if m.called_up else []
+        for aid in ids:
+            athlete_counts[aid] = athlete_counts.get(aid, 0) + 1
+
+    return jsonify({
+        'history': [{'match_id': m.id, 'date': m.date, 'opponent': m.opponent,
+                      'called_up': json.loads(m.called_up) if m.called_up else []}
+                     for m in recent_matches],
+        'athlete_callup_counts': athlete_counts,
+        'total_matches': len(recent_matches),
+    })

@@ -14,6 +14,7 @@ import TemplatePicker from '@/components/Templates/TemplatePicker'
 import WeeklyPlanner from '@/components/Planner/WeeklyPlanner'
 import { exportTrainingToICS, exportAllToICS } from '@/utils/calendarExport'
 import TrainingSuggestions from '@/components/AI/TrainingSuggestions'
+import EmptyState from '@/components/EmptyState/EmptyState'
 import { AnimatedPage, AnimatedList } from '@/components/Motion/AnimatedPage'
 import { Calendar, Plus, X, Clock, Target, BookOpen, ClipboardCheck, BookMarked, CalendarDays, List, Save, Download, Printer, Brain } from 'lucide-react'
 import { PageSkeleton } from '@/components/Skeleton/Skeleton'
@@ -143,6 +144,7 @@ export default function TrainingsPage() {
       completed: false,
       actual_rpe: null,
       notes: null,
+      video_url: null,
     }])
     setShowLibrary(false)
   }
@@ -398,10 +400,12 @@ export default function TrainingsPage() {
       )}
 
       {sessions.length === 0 && !showCreate && viewMode === 'list' && (
-        <div className="text-center py-12 text-gray-400 dark:text-gray-500">
-          <Calendar size={48} className="mx-auto mb-3 opacity-50" />
-          <p>Nessun allenamento. Crea il primo!</p>
-        </div>
+        <EmptyState
+          icon={<Calendar size={36} className="text-gray-400" />}
+          title="Nessun allenamento"
+          description="Pianifica la prima sessione del tuo team!"
+          action={<button onClick={() => setShowCreate(true)} className="btn-primary text-sm"><Plus size={16} className="inline mr-1" /> Nuovo Allenamento</button>}
+        />
       )}
     </div>
   )

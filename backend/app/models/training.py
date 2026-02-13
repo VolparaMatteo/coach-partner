@@ -89,6 +89,7 @@ class TrainingBlock(db.Model):
     completed = db.Column(db.Boolean, default=False)
     actual_rpe = db.Column(db.Float, nullable=True)
     notes = db.Column(db.Text, nullable=True)
+    video_url = db.Column(db.String(500))
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
@@ -113,4 +114,5 @@ class TrainingBlock(db.Model):
             "completed": self.completed,
             "actual_rpe": self.actual_rpe,
             "notes": self.notes,
+            "video_url": self.video_url,
         }

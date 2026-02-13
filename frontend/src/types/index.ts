@@ -91,6 +91,7 @@ export interface TrainingBlock {
   completed: boolean
   actual_rpe: number | null
   notes: string | null
+  video_url: string | null
 }
 
 export interface Match {
@@ -202,4 +203,22 @@ export interface StaffMember {
   status: 'pending' | 'active' | 'revoked'
   team_ids: number[] | null
   created_at: string
+}
+
+export interface Goal {
+  id: number
+  athlete_id: number
+  title: string
+  description: string | null
+  category: string | null
+  deadline: string | null
+  progress: number
+  status: 'active' | 'completed' | 'abandoned'
+  created_at: string
+}
+
+export interface TimelineEvent {
+  type: 'evaluation' | 'note' | 'injury' | 'attendance' | 'wellness'
+  date: string
+  data: Record<string, unknown>
 }

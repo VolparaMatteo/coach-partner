@@ -7,6 +7,7 @@ import GlobalSearch from '@/components/Search/GlobalSearch'
 import NotificationCenter from '@/components/Notifications/NotificationCenter'
 import OfflineIndicator from '@/components/Offline/OfflineIndicator'
 import OnboardingTour from '@/components/Onboarding/OnboardingTour'
+import KeyboardShortcuts from '@/components/Shortcuts/KeyboardShortcuts'
 import { useReminders } from '@/hooks/useReminders'
 import {
   Home, Users, Calendar, Trophy, BarChart3,
@@ -186,6 +187,9 @@ export default function Layout() {
 
         {/* Offline Indicator */}
         <OfflineIndicator />
+
+        {/* Keyboard Shortcuts */}
+        <KeyboardShortcuts onSearch={() => setSearchOpen(true)} />
 
         {/* Onboarding Tour */}
         {showTour && <OnboardingTour onComplete={completeTour} />}
