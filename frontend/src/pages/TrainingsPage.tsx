@@ -13,7 +13,9 @@ import TeamSelector from '@/components/TeamSelector/TeamSelector'
 import TemplatePicker from '@/components/Templates/TemplatePicker'
 import WeeklyPlanner from '@/components/Planner/WeeklyPlanner'
 import { exportTrainingToICS, exportAllToICS } from '@/utils/calendarExport'
-import { Calendar, Plus, X, Clock, Target, BookOpen, ClipboardCheck, BookMarked, CalendarDays, List, Save, Download, Printer } from 'lucide-react'
+import TrainingSuggestions from '@/components/AI/TrainingSuggestions'
+import { AnimatedPage, AnimatedList } from '@/components/Motion/AnimatedPage'
+import { Calendar, Plus, X, Clock, Target, BookOpen, ClipboardCheck, BookMarked, CalendarDays, List, Save, Download, Printer, Brain } from 'lucide-react'
 import { PageSkeleton } from '@/components/Skeleton/Skeleton'
 import clsx from 'clsx'
 
@@ -268,6 +270,13 @@ export default function TrainingsPage() {
             }}
             onClose={() => setShowTemplates(false)}
           />
+        </div>
+      )}
+
+      {/* AI Suggestions */}
+      {viewMode === 'list' && activeTeamId && !showCreate && (
+        <div className="card">
+          <TrainingSuggestions />
         </div>
       )}
 

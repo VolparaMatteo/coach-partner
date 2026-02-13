@@ -6,6 +6,7 @@ import ToastContainer from '@/components/Toast/ToastContainer'
 import GlobalSearch from '@/components/Search/GlobalSearch'
 import NotificationCenter from '@/components/Notifications/NotificationCenter'
 import OfflineIndicator from '@/components/Offline/OfflineIndicator'
+import OnboardingTour from '@/components/Onboarding/OnboardingTour'
 import { useReminders } from '@/hooks/useReminders'
 import {
   Home, Users, Calendar, Trophy, BarChart3,
@@ -29,7 +30,15 @@ export default function Layout() {
   const navigate = useNavigate()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
+  const [showTour, setShowTour] = useState(() => {
+    return !localStorage.getItem('tour_completed')
+  })
   useReminders()
+
+  const completeTour = () => {
+    localStorage.setItem('tour_completed', 'true')
+    setShowTour(false)
+  }
 
   // Cmd+K / Ctrl+K shortcut for search
   useEffect(() => {
@@ -177,6 +186,9 @@ export default function Layout() {
 
         {/* Offline Indicator */}
         <OfflineIndicator />
+
+        {/* Onboarding Tour */}
+        {showTour && <OnboardingTour onComplete={completeTour} />}
 
         {/* Mobile bottom nav */}
         <nav className="lg:hidden flex items-center justify-around bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 py-2">

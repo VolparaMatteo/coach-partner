@@ -4,6 +4,7 @@ import type { Athlete, Evaluation, WellnessEntry, Note, SportConfig } from '@/ty
 import InjuryManager from '@/components/Injuries/InjuryManager'
 import WellnessDashboard from '@/components/Wellness/WellnessDashboard'
 import PhotoUpload from '@/components/Athletes/PhotoUpload'
+import AthleteCharts from '@/components/Athletes/AthleteCharts'
 import { exportAthletePDF } from '@/utils/pdfExport'
 import {
   ArrowLeft, UserCircle, Activity, Target, FileText,
@@ -211,6 +212,15 @@ export default function AthleteDetail({ athleteId, sportConfig, onBack }: Props)
               {athlete.dominant_hand && <div><span className="text-gray-500 dark:text-gray-400">Mano:</span> <span className="font-medium capitalize">{athlete.dominant_hand}</span></div>}
               {athlete.birth_date && <div><span className="text-gray-500 dark:text-gray-400">Nato:</span> <span className="font-medium">{new Date(athlete.birth_date).toLocaleDateString('it-IT')}</span></div>}
             </div>
+          </div>
+          {/* Charts */}
+          <div className="card lg:col-span-2">
+            <AthleteCharts
+              evaluations={evaluations}
+              wellness={wellness}
+              attendancePct={attendance_pct}
+              weeklyLoad={weekly_load}
+            />
           </div>
         </div>
       )}

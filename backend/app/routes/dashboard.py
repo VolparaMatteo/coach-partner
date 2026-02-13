@@ -299,3 +299,189 @@ def advanced_team_stats(team_id):
         "avg_attendance_rate": avg_attendance_rate,
         "team_health": team_health,
     })
+
+
+@dashboard_bp.route("/suggestions/<int:team_id>", methods=["GET"])
+@coach_required
+def training_suggestions(user, team_id):
+    """AI-driven training suggestions based on team wellness, workload and injuries."""
+    team = Team.query.filter_by(id=team_id, coach_id=user.id).first()
+    if not team:
+        return jsonify({"error": "Team not found"}), 404
+
+    today = date.today()
+    week_ago = today - timedelta(days=7)
+
+    # 1. Get all athletes for the team
+    athletes = Athlete.query.filter_by(team_id=team.id).all()
+    athlete_ids = [a.id for a in athletes]
+
+    if not athlete_ids:
+        return jsonify({"error": "No athletes in this team"}), 404
+
+    # 2. Last 7 days of wellness entries for all athletes
+    wellness_entries = WellnessEntry.query.filter(
+        WellnessEntry.athlete_id.in_(athlete_ids),
+        WellnessEntry.date >= week_ago
+    ).all()
+
+    # 3. Last 7 days of training sessions (with attendance)
+    recent_sessions = TrainingSession.query.filter(
+        TrainingSession.team_id == team.id,
+        TrainingSession.date >= week_ago
+    ).all()
+
+    session_ids = [s.id for s in recent_sessions]
+    recent_attendances = []
+    if session_ids:
+        recent_attendances = Attendance.query.filter(
+            Attendance.training_session_id.in_(session_ids)
+        ).all()
+
+    # 4. Active injuries for the team
+    active_injuries = Injury.query.filter(
+        Injury.athlete_id.in_(athlete_ids),
+        Injury.status != "cleared"
+    ).all()
+
+    # 5. Calculate metrics
+    energy_values = [w.energy for w in wellness_entries if w.energy is not None]
+    stress_values = [w.stress for w in wellness_entries if w.stress is not None]
+    sleep_values = [w.sleep_quality for w in wellness_entries if w.sleep_quality is not None]
+    doms_values = [w.doms for w in wellness_entries if w.doms is not None]
+
+    avg_energy = round(sum(energy_values) / len(energy_values), 1) if energy_values else 5.0
+    avg_stress = round(sum(stress_values) / len(stress_values), 1) if stress_values else 5.0
+    avg_sleep = round(sum(sleep_values) / len(sleep_values), 1) if sleep_values else 5.0
+    avg_doms = round(sum(doms_values) / len(doms_values), 1) if doms_values else 5.0
+
+    injury_count = len(active_injuries)
+    sessions_this_week = len(recent_sessions)
+
+    # Average RPE from recent sessions (session-level first, fallback to attendance)
+    session_rpes = [s.rpe_avg for s in recent_sessions if s.rpe_avg is not None]
+    if not session_rpes:
+        attendance_rpes = [a.rpe for a in recent_attendances if a.rpe is not None]
+        avg_rpe = round(sum(attendance_rpes) / len(attendance_rpes), 1) if attendance_rpes else None
+    else:
+        avg_rpe = round(sum(session_rpes) / len(session_rpes), 1)
+
+    # 6. Generate suggestions
+    intensity = "medium"
+    intensity_reason = ""
+    focus_areas = []
+    warnings = []
+
+    # Low energy or high stress -> low intensity
+    if avg_energy < 4 or avg_stress > 7:
+        intensity = "low"
+        intensity_reason = "Low energy or high stress levels detected across the team"
+        focus_areas.append("technical/tactical (low intensity)")
+        focus_areas.append("recovery work")
+
+    # High injury count -> reduce intensity, add warning
+    if injury_count > 2:
+        warnings.append(f"{injury_count} active injuries in the squad — consider adapted exercises")
+        if intensity != "low":
+            intensity = "low"
+            intensity_reason = "Multiple active injuries require reduced training load"
+        focus_areas.append("injury prevention")
+
+    # Heavy week -> suggest rest or low intensity
+    if sessions_this_week >= 4:
+        warnings.append(f"{sessions_this_week} sessions this week — consider a recovery day")
+        if intensity == "medium":
+            intensity = "low"
+            intensity_reason = "High weekly session count suggests need for recovery"
+        focus_areas.append("active recovery")
+
+    # High RPE -> lower intensity
+    if avg_rpe is not None and avg_rpe > 7:
+        warnings.append(f"Average RPE is {avg_rpe} — athletes are reporting high exertion")
+        if intensity != "low":
+            intensity = "low"
+            intensity_reason = "Recent high RPE values indicate accumulated fatigue"
+        focus_areas.append("technical/tactical (low intensity)")
+
+    # If no special conditions triggered, set based on energy/stress balance
+    if not intensity_reason:
+        if avg_energy >= 7 and avg_stress <= 4:
+            intensity = "high"
+            intensity_reason = "Team shows high energy and low stress — good conditions for intense work"
+            focus_areas.append("physical conditioning")
+            focus_areas.append("high-intensity tactical drills")
+        elif avg_energy >= 5:
+            intensity = "medium"
+            intensity_reason = "Team wellness is balanced — standard training intensity appropriate"
+            focus_areas.append("technical development")
+            focus_areas.append("tactical work")
+        else:
+            intensity = "low"
+            intensity_reason = "Below-average energy levels suggest a lighter session"
+            focus_areas.append("technical/tactical (low intensity)")
+
+    # Additional focus area suggestions based on specific metrics
+    if avg_energy < 5 and "physical conditioning" not in focus_areas:
+        focus_areas.append("technical/tactical (low intensity)")
+    if avg_doms > 6:
+        warnings.append(f"Average muscle soreness (DOMS) is {avg_doms}/10 — consider lighter physical load")
+        if "recovery work" not in focus_areas:
+            focus_areas.append("recovery work")
+    if avg_sleep < 5:
+        warnings.append(f"Average sleep quality is {avg_sleep}/10 — monitor athlete wellbeing")
+
+    # Deduplicate focus areas while preserving order
+    seen = set()
+    unique_focus = []
+    for fa in focus_areas:
+        if fa not in seen:
+            seen.add(fa)
+            unique_focus.append(fa)
+    focus_areas = unique_focus
+
+    # Suggested duration based on intensity
+    if intensity == "low":
+        suggested_duration = 60
+    elif intensity == "high":
+        suggested_duration = 90
+    else:
+        suggested_duration = 75
+
+    # Recovery score (1-10): based on energy, sleep quality, and inverted stress
+    inverted_stress = 11 - avg_stress  # high stress = low recovery
+    recovery_score = round((avg_energy + avg_sleep + inverted_stress) / 3)
+    recovery_score = max(1, min(10, recovery_score))
+
+    # Readiness score (1-10): combination of all factors
+    rpe_penalty = 0
+    if avg_rpe is not None:
+        rpe_penalty = max(0, avg_rpe - 5) * 0.5  # penalise high RPE
+
+    session_penalty = max(0, sessions_this_week - 3) * 0.5  # penalise heavy weeks
+    injury_penalty = min(injury_count * 0.5, 3)  # cap injury penalty at 3
+    inverted_doms = 11 - avg_doms
+
+    readiness_raw = (
+        avg_energy + avg_sleep + inverted_stress + inverted_doms
+    ) / 4 - rpe_penalty - session_penalty - injury_penalty
+
+    readiness_score = round(max(1, min(10, readiness_raw)))
+
+    suggestions = {
+        "intensity": intensity,
+        "intensity_reason": intensity_reason,
+        "suggested_duration": suggested_duration,
+        "focus_areas": focus_areas,
+        "warnings": warnings,
+        "recovery_score": recovery_score,
+        "readiness_score": readiness_score,
+        "metrics": {
+            "avg_energy": avg_energy,
+            "avg_stress": avg_stress,
+            "injury_count": injury_count,
+            "sessions_this_week": sessions_this_week,
+            "avg_rpe": avg_rpe,
+        },
+    }
+
+    return jsonify(suggestions), 200
