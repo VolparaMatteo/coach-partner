@@ -222,3 +222,31 @@ export interface TimelineEvent {
   date: string
   data: Record<string, unknown>
 }
+
+export interface PeriodizationCycle {
+  id: number
+  team_id: number
+  parent_id: number | null
+  name: string
+  cycle_type: 'macro' | 'meso' | 'micro'
+  start_date: string
+  end_date: string
+  objectives: string | null
+  planned_load: string | null
+  notes: string | null
+  color: string | null
+  created_at: string
+}
+
+export interface TrainingLoadData {
+  acwr: number
+  acute_load: number
+  chronic_load: number
+  monotony: number
+  strain: number
+  risk: string
+  risk_label: string
+  risk_color: string
+  weekly_trend: { week: string; load: number; sessions: number; avg_daily: number }[]
+  athlete_loads: { athlete_id: number; name: string; load: number; sessions: number }[]
+}

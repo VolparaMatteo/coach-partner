@@ -41,6 +41,7 @@ def create_app(config_name="default"):
     from app.routes.seasons import seasons_bp
     from app.routes.backup import backup_bp
     from app.routes.goals import goals_bp
+    from app.routes.periodization import periodization_bp
 
     app.register_blueprint(auth_bp, url_prefix="/api/auth")
     app.register_blueprint(onboarding_bp, url_prefix="/api/onboarding")
@@ -61,6 +62,7 @@ def create_app(config_name="default"):
     app.register_blueprint(seasons_bp, url_prefix="/api/seasons")
     app.register_blueprint(backup_bp, url_prefix="/api/backup")
     app.register_blueprint(goals_bp, url_prefix="/api/goals")
+    app.register_blueprint(periodization_bp, url_prefix="/api/periodization")
 
     @app.route("/api/health")
     def health():

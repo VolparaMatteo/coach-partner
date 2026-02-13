@@ -629,3 +629,125 @@ def activity_log(user, athlete_id):
     timeline = timeline[:50]
 
     return jsonify({"timeline": timeline})
+
+
+@dashboard_bp.route("/training-load/<int:team_id>", methods=["GET"])
+@coach_required
+def training_load(user, team_id):
+    """ACWR (Acute:Chronic Workload Ratio), monotony and strain for a team."""
+    team = Team.query.filter_by(id=team_id, coach_id=user.id).first()
+    if not team:
+        return jsonify({"error": "Team not found"}), 404
+
+    today = date.today()
+
+    # Collect daily loads for the last 35 days (28 chronic + 7 acute)
+    start_date = today - timedelta(days=35)
+    sessions = TrainingSession.query.filter(
+        TrainingSession.team_id == team.id,
+        TrainingSession.date >= start_date,
+    ).all()
+
+    # Build daily load map: load = RPE * duration
+    daily_loads = {}
+    for s in sessions:
+        day_key = s.date.isoformat()
+        load = (s.rpe_avg or 5) * (s.duration_minutes or 60)
+        daily_loads[day_key] = daily_loads.get(day_key, 0) + load
+
+    # Compute 7-day windows for acute and chronic
+    def get_window_loads(end_day, days):
+        total = 0
+        vals = []
+        for d in range(days):
+            day = (end_day - timedelta(days=d)).isoformat()
+            v = daily_loads.get(day, 0)
+            total += v
+            vals.append(v)
+        return total, vals
+
+    # Acute load (last 7 days)
+    acute_total, acute_vals = get_window_loads(today, 7)
+    acute_avg = acute_total / 7
+
+    # Chronic load (last 28 days)
+    chronic_total, chronic_vals = get_window_loads(today, 28)
+    chronic_avg = chronic_total / 28
+
+    # ACWR
+    acwr = round(acute_avg / chronic_avg, 2) if chronic_avg > 0 else 0
+
+    # Monotony (last 7 days): mean / std_dev
+    import statistics
+    if len(acute_vals) > 1 and any(v > 0 for v in acute_vals):
+        mean_load = statistics.mean(acute_vals)
+        std_load = statistics.stdev(acute_vals)
+        monotony = round(mean_load / std_load, 2) if std_load > 0 else 0
+    else:
+        mean_load = 0
+        monotony = 0
+
+    # Strain = weekly load * monotony
+    strain = round(acute_total * monotony, 0)
+
+    # Risk zone
+    if acwr < 0.8:
+        risk = "undertraining"
+        risk_label = "Sottoallenamento"
+        risk_color = "blue"
+    elif acwr <= 1.3:
+        risk = "optimal"
+        risk_label = "Zona ottimale"
+        risk_color = "green"
+    elif acwr <= 1.5:
+        risk = "caution"
+        risk_label = "Attenzione"
+        risk_color = "yellow"
+    else:
+        risk = "danger"
+        risk_label = "Pericolo sovraccarico"
+        risk_color = "red"
+
+    # Weekly trend (last 6 weeks)
+    weekly_trend = []
+    for w in range(6):
+        week_end = today - timedelta(days=w * 7)
+        week_total, week_vals = get_window_loads(week_end, 7)
+        week_sessions = sum(1 for v in week_vals if v > 0)
+        weekly_trend.append({
+            "week": f"Sett. -{w}" if w > 0 else "Corrente",
+            "load": round(week_total, 0),
+            "sessions": week_sessions,
+            "avg_daily": round(week_total / 7, 0),
+        })
+    weekly_trend.reverse()
+
+    # Per-athlete loads (last 7 days)
+    athlete_loads = []
+    athletes = Athlete.query.filter_by(team_id=team.id).all()
+    for athlete in athletes:
+        attendances = Attendance.query.join(TrainingSession).filter(
+            Attendance.athlete_id == athlete.id,
+            TrainingSession.date >= today - timedelta(days=7),
+        ).all()
+        total = sum((a.rpe or 5) * (a.minutes_trained or a.session.duration_minutes or 60) for a in attendances)
+        athlete_loads.append({
+            "athlete_id": athlete.id,
+            "name": athlete.full_name,
+            "load": round(total, 0),
+            "sessions": len(attendances),
+        })
+    athlete_loads.sort(key=lambda x: x["load"], reverse=True)
+
+    return jsonify({
+        "acwr": acwr,
+        "acute_load": round(acute_total, 0),
+        "chronic_load": round(chronic_total, 0),
+        "monotony": monotony,
+        "strain": strain,
+        "risk": risk,
+        "risk_label": risk_label,
+        "risk_color": risk_color,
+        "weekly_trend": weekly_trend,
+        "athlete_loads": athlete_loads,
+    })

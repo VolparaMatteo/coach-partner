@@ -14,9 +14,11 @@ import TemplatePicker from '@/components/Templates/TemplatePicker'
 import WeeklyPlanner from '@/components/Planner/WeeklyPlanner'
 import { exportTrainingToICS, exportAllToICS } from '@/utils/calendarExport'
 import TrainingSuggestions from '@/components/AI/TrainingSuggestions'
+import PeriodizationCalendar from '@/components/Periodization/PeriodizationCalendar'
+import TrainingLoadMonitor from '@/components/TrainingLoad/TrainingLoadMonitor'
 import EmptyState from '@/components/EmptyState/EmptyState'
 import { AnimatedPage, AnimatedList } from '@/components/Motion/AnimatedPage'
-import { Calendar, Plus, X, Clock, Target, BookOpen, ClipboardCheck, BookMarked, CalendarDays, List, Save, Download, Printer, Brain } from 'lucide-react'
+import { Calendar, Plus, X, Clock, Target, BookOpen, ClipboardCheck, BookMarked, CalendarDays, List, Save, Download, Printer, Brain, Layers, Activity } from 'lucide-react'
 import { PageSkeleton } from '@/components/Skeleton/Skeleton'
 import clsx from 'clsx'
 
@@ -34,7 +36,7 @@ export default function TrainingsPage() {
   const [postTrainingSession, setPostTrainingSession] = useState<TrainingSession | null>(null)
   const [showLibrary, setShowLibrary] = useState(false)
   const [showTemplates, setShowTemplates] = useState(false)
-  const [viewMode, setViewMode] = useState<'list' | 'week'>('list')
+  const [viewMode, setViewMode] = useState<'list' | 'week' | 'periodization' | 'load'>('list')
   const [form, setForm] = useState({
     date: new Date().toISOString().split('T')[0],
     title: '',
@@ -248,7 +250,7 @@ export default function TrainingsPage() {
       </div>
 
       {/* View toggle */}
-      <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 rounded-xl p-1 max-w-xs">
+      <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 rounded-xl p-1 max-w-lg">
         <button onClick={() => setViewMode('list')}
           className={clsx('flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-colors',
             viewMode === 'list' ? 'bg-white dark:bg-gray-700 shadow-sm text-gray-900 dark:text-gray-100' : 'text-gray-500 dark:text-gray-400')}>
@@ -258,6 +260,16 @@ export default function TrainingsPage() {
           className={clsx('flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-colors',
             viewMode === 'week' ? 'bg-white dark:bg-gray-700 shadow-sm text-gray-900 dark:text-gray-100' : 'text-gray-500 dark:text-gray-400')}>
           <CalendarDays size={14} /> Settimana
+        </button>
+        <button onClick={() => setViewMode('periodization')}
+          className={clsx('flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-colors',
+            viewMode === 'periodization' ? 'bg-white dark:bg-gray-700 shadow-sm text-gray-900 dark:text-gray-100' : 'text-gray-500 dark:text-gray-400')}>
+          <Layers size={14} /> Cicli
+        </button>
+        <button onClick={() => setViewMode('load')}
+          className={clsx('flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-colors',
+            viewMode === 'load' ? 'bg-white dark:bg-gray-700 shadow-sm text-gray-900 dark:text-gray-100' : 'text-gray-500 dark:text-gray-400')}>
+          <Activity size={14} /> Carico
         </button>
       </div>
 
@@ -330,6 +342,20 @@ export default function TrainingsPage() {
             )}
             <button onClick={handleCreate} className="btn-primary">Crea Allenamento</button>
           </div>
+        </div>
+      )}
+
+      {/* Periodization view */}
+      {viewMode === 'periodization' && activeTeamId && (
+        <div className="card">
+          <PeriodizationCalendar />
+        </div>
+      )}
+
+      {/* Training Load view */}
+      {viewMode === 'load' && activeTeamId && (
+        <div className="card">
+          <TrainingLoadMonitor />
         </div>
       )}
 
