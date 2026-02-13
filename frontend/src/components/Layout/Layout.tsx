@@ -5,6 +5,7 @@ import QuickNoteFAB from '@/components/QuickNote/QuickNoteFAB'
 import ToastContainer from '@/components/Toast/ToastContainer'
 import GlobalSearch from '@/components/Search/GlobalSearch'
 import NotificationCenter from '@/components/Notifications/NotificationCenter'
+import OfflineIndicator from '@/components/Offline/OfflineIndicator'
 import { useReminders } from '@/hooks/useReminders'
 import {
   Home, Users, Calendar, Trophy, BarChart3,
@@ -173,6 +174,9 @@ export default function Layout() {
 
         {/* Global Search */}
         <GlobalSearch open={searchOpen} onClose={() => setSearchOpen(false)} />
+
+        {/* Offline Indicator */}
+        <OfflineIndicator />
 
         {/* Mobile bottom nav */}
         <nav className="lg:hidden flex items-center justify-around bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 py-2">

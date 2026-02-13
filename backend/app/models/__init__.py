@@ -1,4 +1,5 @@
 from app.models.user import User
+from app.models.season import Season
 from app.models.team import Team
 from app.models.athlete import Athlete
 from app.models.training import TrainingSession, TrainingBlock
@@ -9,11 +10,13 @@ from app.models.injury import Injury
 from app.models.note import Note
 from app.models.ai_report import AIReport
 from app.models.attendance import Attendance
+from app.models.staff import StaffMember
 
 __all__ = [
-    "User", "Team", "Athlete",
+    "User", "Season", "Team", "Athlete",
     "TrainingSession", "TrainingBlock",
     "Match", "Evaluation",
     "WellnessEntry", "Injury",
     "Note", "AIReport", "Attendance",
+    "StaffMember",
 ]

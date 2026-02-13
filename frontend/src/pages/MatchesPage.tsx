@@ -6,7 +6,8 @@ import { useTeamStore } from '@/store/team'
 import MatchDetail from '@/components/Match/MatchDetail'
 import TeamSelector from '@/components/TeamSelector/TeamSelector'
 import { PageSkeleton } from '@/components/Skeleton/Skeleton'
-import { Trophy, Plus, X, MapPin } from 'lucide-react'
+import { exportMatchToICS, exportAllToICS } from '@/utils/calendarExport'
+import { Trophy, Plus, X, MapPin, Download, Printer } from 'lucide-react'
 import clsx from 'clsx'
 
 export default function MatchesPage() {
@@ -95,9 +96,15 @@ export default function MatchesPage() {
         </div>
         <div className="flex items-center gap-2">
           <TeamSelector />
-        <button onClick={() => setShowCreate(true)} className="btn-primary flex items-center gap-2">
-          <Plus size={18} /> Nuova Gara
-        </button>
+          <button onClick={() => exportAllToICS([], matches)} className="btn-secondary flex items-center gap-2 text-sm py-2 px-3" title="Esporta calendario">
+            <Download size={14} />
+          </button>
+          <button onClick={() => window.print()} className="btn-secondary flex items-center gap-2 text-sm py-2 px-3 no-print" title="Stampa">
+            <Printer size={14} />
+          </button>
+          <button onClick={() => setShowCreate(true)} className="btn-primary flex items-center gap-2">
+            <Plus size={18} /> Nuova Gara
+          </button>
         </div>
       </div>
 

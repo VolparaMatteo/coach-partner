@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { useAuthStore } from '@/store/auth'
 import { useThemeStore } from '@/store/theme'
 import api from '@/api/client'
+import SeasonManager from '@/components/Seasons/SeasonManager'
+import StaffManager from '@/components/Staff/StaffManager'
 import { Settings, User, Save, Check, Moon, Sun, Palette } from 'lucide-react'
 
 export default function SettingsPage() {
@@ -124,9 +126,17 @@ export default function SettingsPage() {
       </div>
 
       <div className="card">
+        <SeasonManager />
+      </div>
+
+      <div className="card">
+        <StaffManager />
+      </div>
+
+      <div className="card">
         <h2 className="font-semibold mb-2">Informazioni</h2>
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          Coach Partner v2.0.0<br />
+          Coach Partner v3.0.0<br />
           Account creato il {user?.created_at ? new Date(user.created_at).toLocaleDateString('it-IT') : 'N/D'}
         </p>
       </div>

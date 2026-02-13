@@ -57,3 +57,105 @@
 .animate-slide-in {
   animation: slide-in 0.25s ease-out;
 }
+
+/* Print-optimized styles */
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+    font-size: 12pt;
+    line-height: 1.4;
+  }
+
+  /* Hide navigation, FAB, toasts, search */
+  aside,
+  header,
+  nav,
+  .no-print,
+  button:not(.print-keep),
+  [class*="QuickNote"],
+  [class*="Toast"],
+  [class*="GlobalSearch"],
+  [class*="OfflineIndicator"] {
+    display: none !important;
+  }
+
+  /* Full width layout */
+  .min-h-screen {
+    min-height: auto !important;
+  }
+  main {
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+  .flex-1.flex.flex-col {
+    display: block !important;
+  }
+
+  /* Cards styling for print */
+  .card {
+    border: 1px solid #e5e7eb !important;
+    box-shadow: none !important;
+    background: white !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+    margin-bottom: 12pt;
+  }
+
+  /* Reset dark mode colors */
+  * {
+    color: black !important;
+    background-color: transparent !important;
+    border-color: #d1d5db !important;
+  }
+
+  /* Keep colored badges readable */
+  [class*="bg-green-"] { background-color: #dcfce7 !important; }
+  [class*="bg-yellow-"] { background-color: #fef9c3 !important; }
+  [class*="bg-red-"] { background-color: #fee2e2 !important; }
+  [class*="bg-blue-"] { background-color: #dbeafe !important; }
+  [class*="bg-brand-"] { background-color: #dcfce7 !important; }
+
+  /* Table-like grids */
+  .grid {
+    break-inside: avoid;
+  }
+
+  /* Print header */
+  .print-header {
+    display: block !important;
+    text-align: center;
+    margin-bottom: 16pt;
+    padding-bottom: 8pt;
+    border-bottom: 2px solid black;
+  }
+  .print-header h1 {
+    font-size: 18pt;
+    font-weight: bold;
+  }
+  .print-header p {
+    font-size: 10pt;
+    color: #666 !important;
+  }
+
+  /* Force page breaks */
+  .print-page-break {
+    page-break-before: always;
+  }
+
+  /* Compact spacing for print */
+  .space-y-6 > * + * {
+    margin-top: 8pt !important;
+  }
+  .space-y-4 > * + * {
+    margin-top: 6pt !important;
+  }
+  .space-y-3 > * + * {
+    margin-top: 4pt !important;
+  }
+
+  @page {
+    margin: 1.5cm;
+    size: A4;
+  }
+}

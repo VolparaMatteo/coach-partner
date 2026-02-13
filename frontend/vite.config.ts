@@ -33,9 +33,23 @@ export default defineConfig({
             options: { cacheName: 'google-fonts', expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 365 } },
           },
           {
+            urlPattern: /\/api\/(teams|athletes|trainings|matches|dashboard).*/i,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'api-data',
+              expiration: { maxEntries: 100, maxAgeSeconds: 60 * 30 },
+              networkTimeoutSeconds: 5,
+            },
+          },
+          {
             urlPattern: /\/api\/.*/i,
             handler: 'NetworkFirst',
             options: { cacheName: 'api-cache', expiration: { maxEntries: 50, maxAgeSeconds: 60 * 5 } },
+          },
+          {
+            urlPattern: /\/api\/uploads\/.*/i,
+            handler: 'CacheFirst',
+            options: { cacheName: 'uploads-cache', expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 * 30 } },
           },
         ],
       },

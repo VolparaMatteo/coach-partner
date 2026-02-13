@@ -180,3 +180,26 @@ export interface SportConfig {
   evaluation_tags: string[]
   physical_attribute: string
 }
+
+export interface Season {
+  id: number
+  coach_id: number
+  name: string
+  start_date: string
+  end_date: string
+  is_active: boolean
+  notes: string | null
+  created_at: string
+}
+
+export interface StaffMember {
+  id: number
+  coach_id: number
+  user_id: number | null
+  email: string
+  name: string | null
+  role: 'viewer' | 'editor' | 'admin'
+  status: 'pending' | 'active' | 'revoked'
+  team_ids: number[] | null
+  created_at: string
+}

@@ -178,3 +178,127 @@ def upload_photo(user, athlete_id):
         "photo_url": photo_url,
         "athlete": athlete.to_dict(),
     })
+
+
+# ---------------------------------------------------------------------------
+# Bulk operations
+# ---------------------------------------------------------------------------
+from datetime import date
+from app.models.evaluation import Evaluation
+from app.models.note import Note
+
+
+def _get_coach_athlete_ids(user, requested_ids):
+    """Return the subset of requested_ids that belong to teams owned by the coach."""
+    coach_team_ids = [t.id for t in Team.query.filter_by(coach_id=user.id).all()]
+    if not coach_team_ids:
+        return []
+    athletes = Athlete.query.filter(
+        Athlete.id.in_(requested_ids),
+        Athlete.team_id.in_(coach_team_ids),
+    ).all()
+    return athletes
+
+
+@athletes_bp.route("/bulk/status", methods=["POST"])
+@coach_required
+def bulk_update_status(user):
+    data = request.get_json()
+    athlete_ids = data.get("athlete_ids", [])
+    status = data.get("status")
+
+    if not athlete_ids:
+        return jsonify({"error": "athlete_ids is required and cannot be empty"}), 400
+
+    valid_statuses = ("available", "attention", "unavailable")
+    if status not in valid_statuses:
+        return jsonify({"error": f"status must be one of: {', '.join(valid_statuses)}"}), 400
+
+    athletes = _get_coach_athlete_ids(user, athlete_ids)
+    for athlete in athletes:
+        athlete.status = status
+
+    db.session.commit()
+    return jsonify({"message": "Status updated", "updated": len(athletes)})
+
+
+@athletes_bp.route("/bulk/evaluate", methods=["POST"])
+@coach_required
+def bulk_evaluate(user):
+    data = request.get_json()
+    athlete_ids = data.get("athlete_ids", [])
+
+    if not athlete_ids:
+        return jsonify({"error": "athlete_ids is required and cannot be empty"}), 400
+
+    athletes = _get_coach_athlete_ids(user, athlete_ids)
+    today = date.today()
+    created = 0
+
+    for athlete in athletes:
+        evaluation = Evaluation(
+            athlete_id=athlete.id,
+            date=today,
+            technical=data.get("technical"),
+            tactical=data.get("tactical"),
+            physical=data.get("physical"),
+            mental=data.get("mental"),
+            comment=data.get("comment"),
+        )
+        db.session.add(evaluation)
+        created += 1
+
+    db.session.commit()
+    return jsonify({"message": "Evaluations created", "created": created}), 201
+
+
+@athletes_bp.route("/bulk/notes", methods=["POST"])
+@coach_required
+def bulk_add_notes(user):
+    data = request.get_json()
+    athlete_ids = data.get("athlete_ids", [])
+    text = data.get("text")
+
+    if not athlete_ids:
+        return jsonify({"error": "athlete_ids is required and cannot be empty"}), 400
+
+    if not text:
+        return jsonify({"error": "text is required"}), 400
+
+    athletes = _get_coach_athlete_ids(user, athlete_ids)
+    created = 0
+
+    for athlete in athletes:
+        note = Note(
+            coach_id=user.id,
+            entity_type="athlete",
+            entity_id=athlete.id,
+            text=text.strip(),
+            is_quick_note=data.get("is_quick_note", False),
+        )
+        db.session.add(note)
+        created += 1
+
+    db.session.commit()
+    return jsonify({"message": "Notes created", "created": created}), 201
+
+
+@athletes_bp.route("/bulk/objectives", methods=["POST"])
+@coach_required
+def bulk_assign_objectives(user):
+    data = request.get_json()
+    athlete_ids = data.get("athlete_ids", [])
+    objectives = data.get("objectives")
+
+    if not athlete_ids:
+        return jsonify({"error": "athlete_ids is required and cannot be empty"}), 400
+
+    if objectives is None:
+        return jsonify({"error": "objectives is required"}), 400
+
+    athletes = _get_coach_athlete_ids(user, athlete_ids)
+    for athlete in athletes:
+        athlete.objectives = objectives
+
+    db.session.commit()
+    return jsonify({"message": "Objectives updated", "updated": len(athletes)})

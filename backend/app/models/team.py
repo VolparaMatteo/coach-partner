@@ -22,6 +22,7 @@ class Team(db.Model):
 
     # Season
     season = db.Column(db.String(20), nullable=True)  # "2025-2026"
+    season_id = db.Column(db.Integer, db.ForeignKey("seasons.id"), nullable=True, index=True)
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -44,6 +45,7 @@ class Team(db.Model):
             "training_days": self.training_days,
             "match_day": self.match_day,
             "season": self.season,
+            "season_id": self.season_id,
             "athletes_count": self.athletes.count(),
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }

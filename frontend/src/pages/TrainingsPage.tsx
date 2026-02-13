@@ -12,7 +12,8 @@ import ExerciseLibrary from '@/components/ExerciseLibrary/ExerciseLibrary'
 import TeamSelector from '@/components/TeamSelector/TeamSelector'
 import TemplatePicker from '@/components/Templates/TemplatePicker'
 import WeeklyPlanner from '@/components/Planner/WeeklyPlanner'
-import { Calendar, Plus, X, Clock, Target, BookOpen, ClipboardCheck, BookMarked, CalendarDays, List, Save } from 'lucide-react'
+import { exportTrainingToICS, exportAllToICS } from '@/utils/calendarExport'
+import { Calendar, Plus, X, Clock, Target, BookOpen, ClipboardCheck, BookMarked, CalendarDays, List, Save, Download, Printer } from 'lucide-react'
 import { PageSkeleton } from '@/components/Skeleton/Skeleton'
 import clsx from 'clsx'
 
@@ -227,6 +228,12 @@ export default function TrainingsPage() {
         </div>
         <div className="flex items-center gap-2">
           <TeamSelector />
+          <button onClick={() => exportAllToICS(sessions, [])} className="btn-secondary flex items-center gap-2 text-sm py-2 px-3" title="Esporta calendario">
+            <Download size={14} />
+          </button>
+          <button onClick={() => window.print()} className="btn-secondary flex items-center gap-2 text-sm py-2 px-3 no-print" title="Stampa">
+            <Printer size={14} />
+          </button>
           <button onClick={() => setShowTemplates(!showTemplates)} className="btn-secondary flex items-center gap-2 text-sm py-2 px-3">
             <BookMarked size={14} />
           </button>

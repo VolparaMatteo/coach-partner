@@ -5,10 +5,11 @@ import { useAuthStore } from '@/store/auth'
 import { useTeamStore } from '@/store/team'
 import AthleteDetail from '@/components/Athletes/AthleteDetail'
 import AthleteComparison from '@/components/Athletes/AthleteComparison'
+import BulkActions from '@/components/Athletes/BulkActions'
 import CSVImport from '@/components/Athletes/CSVImport'
 import TeamSelector from '@/components/TeamSelector/TeamSelector'
 import { PageSkeleton } from '@/components/Skeleton/Skeleton'
-import { Users, Plus, Search, X, UserCircle, Upload, BarChart3 } from 'lucide-react'
+import { Users, Plus, Search, X, UserCircle, Upload, BarChart3, CheckSquare } from 'lucide-react'
 import clsx from 'clsx'
 
 export default function AthletesPage() {
@@ -21,6 +22,8 @@ export default function AthletesPage() {
   const [sportConfig, setSportConfig] = useState<SportConfig | null>(null)
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
+  const [selectedIds, setSelectedIds] = useState<number[]>([])
+  const [bulkMode, setBulkMode] = useState(false)
   const [showAdd, setShowAdd] = useState(false)
   const [newAthlete, setNewAthlete] = useState({
     first_name: '', last_name: '', jersey_number: '', position: '',
@@ -102,6 +105,9 @@ export default function AthletesPage() {
         </div>
         <div className="flex gap-2 items-center">
           <TeamSelector />
+          <button onClick={() => { setBulkMode(!bulkMode); setSelectedIds([]) }} className={clsx('btn-secondary flex items-center gap-2 text-sm', bulkMode && 'ring-2 ring-brand-500')}>
+            <CheckSquare size={16} /> {bulkMode ? 'Esci' : 'Bulk'}
+          </button>
           <button onClick={() => setShowComparison(true)} className="btn-secondary flex items-center gap-2 text-sm">
             <BarChart3 size={16} /> Confronta
           </button>
@@ -156,10 +162,48 @@ export default function AthletesPage() {
         </div>
       )}
 
+      {/* Bulk actions toolbar */}
+      {bulkMode && selectedIds.length > 0 && (
+        <BulkActions
+          selectedIds={selectedIds}
+          onDone={() => {
+            setSelectedIds([])
+            setBulkMode(false)
+            if (activeTeamId) api.get(`/athletes?team_id=${activeTeamId}`).then(({ data }) => setAthletes(data.athletes))
+          }}
+          onClearSelection={() => setSelectedIds([])}
+        />
+      )}
+
+      {bulkMode && selectedIds.length === 0 && (
+        <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-2">Seleziona gli atleti per le operazioni bulk</p>
+      )}
+
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredAthletes.map(athlete => (
-          <div key={athlete.id} onClick={() => setSelectedAthleteId(athlete.id)} className="card hover:shadow-md transition-shadow cursor-pointer">
+          <div key={athlete.id}
+            onClick={() => {
+              if (bulkMode) {
+                setSelectedIds(prev => prev.includes(athlete.id) ? prev.filter(id => id !== athlete.id) : [...prev, athlete.id])
+              } else {
+                setSelectedAthleteId(athlete.id)
+              }
+            }}
+            className={clsx(
+              'card hover:shadow-md transition-shadow cursor-pointer',
+              bulkMode && selectedIds.includes(athlete.id) && 'ring-2 ring-brand-500 bg-brand-50 dark:bg-brand-900/20'
+            )}>
             <div className="flex items-start gap-3">
+              {bulkMode && (
+                <div className={clsx(
+                  'w-6 h-6 rounded-md border-2 flex items-center justify-center shrink-0 mt-1 transition-colors',
+                  selectedIds.includes(athlete.id)
+                    ? 'bg-brand-500 border-brand-500 text-white'
+                    : 'border-gray-300 dark:border-gray-600'
+                )}>
+                  {selectedIds.includes(athlete.id) && <CheckSquare size={14} />}
+                </div>
+              )}
               <div className="w-12 h-12 rounded-full bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center text-brand-700 dark:text-brand-400 font-bold text-lg shrink-0">
                 {athlete.jersey_number || <UserCircle size={24} />}
               </div>
