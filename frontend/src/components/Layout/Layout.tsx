@@ -11,7 +11,7 @@ import KeyboardShortcuts from '@/components/Shortcuts/KeyboardShortcuts'
 import { useReminders } from '@/hooks/useReminders'
 import {
   Home, Users, Calendar, Trophy, BarChart3,
-  Settings, LogOut, Menu, X, Moon, Sun, Search
+  Settings, LogOut, Menu, X, Moon, Sun, Search, Globe, MessageCircle
 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import clsx from 'clsx'
@@ -21,6 +21,8 @@ const navItems = [
   { to: '/athletes', icon: Users, label: 'Atleti' },
   { to: '/trainings', icon: Calendar, label: 'Allenamenti' },
   { to: '/matches', icon: Trophy, label: 'Gare' },
+  { to: '/community', icon: Globe, label: 'CoachHub' },
+  { to: '/chat', icon: MessageCircle, label: 'Chat' },
   { to: '/insights', icon: BarChart3, label: 'Insights' },
   { to: '/settings', icon: Settings, label: 'Impostazioni' },
 ]
@@ -196,7 +198,7 @@ export default function Layout() {
 
         {/* Mobile bottom nav */}
         <nav className="lg:hidden flex items-center justify-around bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 py-2">
-          {navItems.slice(0, 5).map(({ to, icon: Icon, label }) => (
+          {navItems.filter(n => ['/', '/trainings', '/matches', '/community', '/chat'].includes(n.to)).map(({ to, icon: Icon, label }) => (
             <NavLink
               key={to}
               to={to}

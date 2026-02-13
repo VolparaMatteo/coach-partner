@@ -250,3 +250,78 @@ export interface TrainingLoadData {
   weekly_trend: { week: string; load: number; sessions: number; avg_daily: number }[]
   athlete_loads: { athlete_id: number; name: string; load: number; sessions: number }[]
 }
+
+export interface CommunityPost {
+  id: number
+  author_id: number
+  author_name: string | null
+  author_sport: string | null
+  author_avatar: string | null
+  sport: string
+  post_type: 'text' | 'photo' | 'exercise' | 'training'
+  content: string | null
+  image_url: string | null
+  shared_exercise: Record<string, unknown> | null
+  shared_training_data: { title?: string; duration_minutes?: number; objectives?: string; blocks?: Record<string, unknown>[] } | null
+  likes_count: number
+  comments_count: number
+  saves_count: number
+  liked?: boolean
+  saved?: boolean
+  created_at: string
+}
+
+export interface CommunityComment {
+  id: number
+  post_id: number
+  author_id: number
+  author_name: string | null
+  author_avatar: string | null
+  text: string
+  created_at: string
+}
+
+export interface CoachProfile {
+  id: number
+  name: string
+  avatar_url: string | null
+  sport: string | null
+  coaching_level: string | null
+  years_experience: number | null
+  followers_count: number
+  following_count: number
+  posts_count: number
+  is_following: boolean
+  is_self: boolean
+}
+
+export interface ChatConversation {
+  user_id: number
+  name: string
+  avatar_url: string | null
+  sport: string | null
+  last_message: ChatMessage | null
+  unread_count: number
+}
+
+export interface ChatMessage {
+  id: number
+  sender_id: number
+  receiver_id: number
+  sender_name: string | null
+  text: string
+  read: boolean
+  created_at: string
+}
+
+export interface ChatRequestType {
+  id: number
+  from_user_id: number
+  from_user_name: string | null
+  from_user_avatar: string | null
+  from_user_sport: string | null
+  to_user_id: number
+  to_user_name: string | null
+  status: 'pending' | 'accepted' | 'rejected'
+  created_at: string
+}

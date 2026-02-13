@@ -14,6 +14,8 @@ const TrainingsPage = lazy(() => import('@/pages/TrainingsPage'))
 const MatchesPage = lazy(() => import('@/pages/MatchesPage'))
 const InsightsPage = lazy(() => import('@/pages/InsightsPage'))
 const SettingsPage = lazy(() => import('@/pages/SettingsPage'))
+const CommunityPage = lazy(() => import('@/pages/CommunityPage'))
+const ChatPage = lazy(() => import('@/pages/ChatPage'))
 
 function PageLoader() {
   return (
@@ -73,6 +75,8 @@ export default function App() {
           <Route path="trainings" element={<TrainingsPage />} />
           <Route path="matches" element={<MatchesPage />} />
           <Route path="insights" element={<InsightsPage />} />
+          <Route path="community" element={<CommunityPage />} />
+          <Route path="chat" element={<ChatPage />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />

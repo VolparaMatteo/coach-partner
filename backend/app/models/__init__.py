@@ -13,6 +13,7 @@ from app.models.attendance import Attendance
 from app.models.staff import StaffMember
 from app.models.goal import Goal
 from app.models.periodization import PeriodizationCycle
+from app.models.community import Post, Comment, PostLike, Follow, SavedPost, ChatRequest, ChatMessage
 
 __all__ = [
     "User", "Season", "Team", "Athlete",
@@ -21,4 +22,6 @@ __all__ = [
     "WellnessEntry", "Injury",
     "Note", "AIReport", "Attendance",
     "StaffMember", "Goal", "PeriodizationCycle",
+    "Post", "Comment", "PostLike", "Follow",
+    "SavedPost", "ChatRequest", "ChatMessage",
 ]
